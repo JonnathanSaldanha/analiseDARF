@@ -628,14 +628,70 @@
             const patternRegex = /(\d{2}\.\d{2}\.\d{5}\.\d{7}\-\d)/;
             const patternMatch = text.match(patternRegex);
             
-            return patternMatch ? patternMatch[1].trim() : '07.01.26009.2867357-2';
+            // Retornar "Não encontrado" em vez de valor padrão
+            return patternMatch ? patternMatch[1].trim() : 'Não encontrado';
         }
         
         function extractBarcode(text) {
-            // Procurar por sequências numéricas longas (código de barras)
-            const barcodeRegex = /(\d{44,48})/;
+            // CORREÇÃO: O código de barras está formatado com espaços
+            // Padrão: XXXXXXXXX XXXXXXXXX XXXXXXXXX XXXXXXXXX X
+            // Exemplo: 85830000000 9  56120385260 9  13070126009 0  28520830448 9
+            
+            // Primeiro, tentar encontrar o padrão completo com espaços
+            const barcodeRegex = /(\d{11}\s+\d{1}\s{2}\d{11}\s+\d{1}\s{2}\d{11}\s+\d{1}\s{2}\d{11}\s+\d{1})/;
             const match = text.match(barcodeRegex);
-            return match ? match[1] : '858600000004100003852608130701260090286735723095';
+            
+            if (match) {
+                // Remover espaços extras e juntar tudo
+                let barcode = match[1].replace(/\s+/g, '');
+                // O código de barras deve ter 44 dígitos
+                if (barcode.length >= 44) {
+                    return barcode.substring(0, 44);
+                }
+            }
+            
+            // Tentar método alternativo: procurar por blocos de 11 dígitos seguidos de 1 dígito
+            const blocksRegex = /(\d{11}\s+\d{1})/g;
+            const blocks = text.match(blocksRegex);
+            
+            if (blocks && blocks.length >= 4) {
+                // Juntar os 4 blocos
+                let barcode = '';
+                for (let i = 0; i < 4 && i < blocks.length; i++) {
+                    barcode += blocks[i].replace(/\s+/g, '');
+                }
+                if (barcode.length >= 44) {
+                    return barcode.substring(0, 44);
+                }
+            }
+            
+            // Última tentativa: procurar qualquer sequência de 44+ dígitos (com ou sem espaços)
+            const anyBarcodeRegex = /(\d[\d\s]{43,})/;
+            const anyMatch = text.match(anyBarcodeRegex);
+            
+            if (anyMatch) {
+                let barcode = anyMatch[1].replace(/\s+/g, '');
+                if (barcode.length >= 44) {
+                    return barcode.substring(0, 44);
+                }
+            }
+            
+            // Procurar por "Documento de Arrecadação" que geralmente vem antes do código
+            const lines = text.split('\n');
+            for (let i = 0; i < lines.length; i++) {
+                if (lines[i].includes('Documento de Arrecadação')) {
+                    // A próxima linha pode conter o código de barras
+                    if (i + 1 < lines.length) {
+                        let nextLine = lines[i + 1];
+                        let barcode = nextLine.replace(/\s+/g, '');
+                        if (barcode.length >= 44 && /^\d+$/.test(barcode)) {
+                            return barcode.substring(0, 44);
+                        }
+                    }
+                }
+            }
+            
+            return 'Não encontrado';
         }
         
         function extractDueDate(text) {
@@ -663,12 +719,11 @@
                 return match3[1].trim();
             }
             
-            return '13/01/2026';
+            return 'Não encontrado';
         }
         
         function extractTaxCode(text) {
-            // Agora corrigido para buscar o código abaixo do título "Código"
-            // Primeiro, encontrar a seção onde está o código
+            // Buscar o código abaixo do título "Código"
             const lines = text.split('\n');
             
             for (let i = 0; i < lines.length; i++) {
@@ -682,20 +737,30 @@
                         // Procurar por padrão de código (04 73 ou 0473)
                         const codeMatch = nextLine.match(/(\d{2,3}\s*\d{2,3})/);
                         if (codeMatch) {
-                            return codeMatch[1].trim();
+                            let code = codeMatch[1].trim();
+                            // Formatar para ter espaço se necessário (0473 -> 04 73)
+                            code = code.replace(/\s/g, '');
+                            if (code.length === 4) {
+                                code = code.substring(0, 2) + ' ' + code.substring(2);
+                            }
+                            return code;
                         }
                     }
                     
                     // Se não encontrou na próxima linha, procurar na mesma linha após "Código"
                     const sameLineMatch = line.match(/C[óo]digo[\s:]*(\d{2,3}\s*\d{2,3})/i);
                     if (sameLineMatch) {
-                        return sameLineMatch[1].trim();
+                        let code = sameLineMatch[1].trim();
+                        code = code.replace(/\s/g, '');
+                        if (code.length === 4) {
+                            code = code.substring(0, 2) + ' ' + code.substring(2);
+                        }
+                        return code;
                     }
                 }
                 
-                // Procurar por padrão específico "04 73" ou "0473"
+                // Procurar por padrão específico "04 73" ou "0473" em qualquer linha
                 if (line.match(/^0?\d{2,3}\s?0?\d{2,3}$/)) {
-                    // Formatar para ter espaço se necessário (0473 -> 04 73)
                     let code = line.replace(/\s/g, '');
                     if (code.length === 4) {
                         code = code.substring(0, 2) + ' ' + code.substring(2);
@@ -704,22 +769,14 @@
                 }
             }
             
-            // Se não encontrou na busca específica, tentar o método antigo
-            const taxCodeRegex1 = /C[óo]digo[\s\n]*(\d{2,3}\s*\d{2,3})/i;
-            const match1 = text.match(taxCodeRegex1);
-            
-            if (match1) {
-                return match1[1].trim();
-            }
-            
-            return '04 73';
+            return 'Não encontrado';
         }
         
         function extractCNPJ(text) {
             // Procurar por CNPJ no formato XX.XXX.XXX/XXXX-XX
             const cnpjRegex = /(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/;
             const match = text.match(cnpjRegex);
-            return match ? match[1].trim() : '00.001.180/0001-26';
+            return match ? match[1].trim() : 'Não encontrado';
         }
         
         function extractCompanyName(text) {
@@ -735,7 +792,7 @@
             const nameRegex2 = /([A-Z\s]{10,50}SA\s+[A-Z]+)/;
             const match2 = text.match(nameRegex2);
             
-            return match2 ? match2[1].trim() : 'CENTRAIS ELETRICAS BRASILEIRAS SA ELETROBRAS';
+            return match2 ? match2[1].trim() : 'Não encontrado';
         }
         
         function extractValue(text) {
@@ -759,7 +816,7 @@
             const valueRegex3 = /R\$\s*([\d.,]+)/i;
             const match3 = text.match(valueRegex3);
             
-            return match3 ? match3[1].trim() : '10,00';
+            return match3 ? match3[1].trim() : 'Não encontrado';
         }
         
         function addRowToTable(data, index) {
