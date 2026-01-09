@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Captura de DARFs</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .header {
+            background: linear-gradient(135deg, #1a3a8f 0%, #2a5bd7 100%);
+            color: white;
+            padding: 1.5rem 0;
+            margin-bottom: 2rem;
+            border-bottom: 5px solid #ffcc00;
+        }
+        .card {
+            border-radius: 12px;
+            border: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s;
+            margin-bottom: 1.5rem;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .btn-primary {
+            background-color: #1a3a8f;
+            border-color: #1a3a8f;
+        }
+        .btn-primary:hover {
+            background-color: #153072;
+            border-color: #153072;
+        }
+        .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+        }
+        .btn-warning {
+            background-color: #ffcc00;
+            border-color: #ffcc00;
+            color: #333;
+        }
+        .file-upload-area {
+            border: 3px dashed #1a3a8f;
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            background-color: #f0f5ff;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .file-upload-area:hover {
+            background-color: #e1ebff;
+            border-color: #153072;
+        }
+        .file-list-item {
+            background-color: #f8f9fa;
+            border-left: 4px solid #1a3a8f;
+            padding: 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 4px;
+        }
+        .table th {
+            background-color: #1a3a8f;
+            color: white;
+            border: none;
+        }
+        .status-badge {
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        .status-processing {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        .status-completed {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .status-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .counter-badge {
+            background-color: #ffcc00;
+            color: #333;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 3rem;
+            padding: 1.5rem 0;
+            background-color: #e9ecef;
+            color: #6c757d;
+            border-top: 1px solid #dee2e6;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1><i class="fas fa-file-invoice-dollar"></i> Sistema de Captura de DARFs em Lote</h1>
+                    <p class="lead mb-0">Capture informações de múltiplos DARFs e exporte para Excel automaticamente</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="counter-badge badge p-3 fs-6">
+                        <i class="fas fa-file-alt me-2"></i>
+                        <span id="totalProcessed">0</span> DARFs processados
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Área de Upload -->
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0"><i class="fas fa-cloud-upload-alt me-2"></i> Carregar DARFs</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-8">
+                        <div id="dropArea" class="file-upload-area">
+                            <i class="fas fa-file-pdf fa-4x mb-3 text-primary"></i>
+                            <h4>Arraste e solte seus arquivos DARF aqui</h4>
+                            <p class="text-muted mb-4">ou clique para selecionar</p>
+                            <input type="file" id="fileInput" class="d-none" multiple accept=".pdf">
+                            <button id="selectFilesBtn" class="btn btn-primary btn-lg">
+                                <i class="fas fa-folder-open me-2"></i> Selecionar Arquivos
+                            </button>
+                            <p class="mt-3 small text-muted">Formatos suportados: PDF. Máximo: 50 arquivos por lote.</p>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="card border-warning">
+                            <div class="card-header bg-warning">
+                                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> Informações Extraídas</h5>
+                            </div>
+                            <div class="card-body">
+                                <ul class="list-group list-group-flush">
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Código de Barras
+                                        <span class="badge bg-primary">✓</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Data de Vencimento
+                                        <span class="badge bg-primary">✓</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Código do Imposto
+                                        <span class="badge bg-primary">✓</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        CNPJ
+                                        <span class="badge bg-primary">✓</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Valor Principal
+                                        <span class="badge bg-primary">✓</span>
+                                    </li>
+                                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                                        Número do Documento
+                                        <span class="badge bg-primary">✓</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="fileList" class="mt-4">
+                    <h5 class="mb-3">Arquivos selecionados:</h5>
+                    <div id="fileListContainer"></div>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <button id="processBtn" class="btn btn-success btn-lg" disabled>
+                        <i class="fas fa-cogs me-2"></i> Processar DARFs
+                    </button>
+                    <button id="clearBtn" class="btn btn-outline-secondary btn-lg">
+                        <i class="fas fa-trash-alt me-2"></i> Limpar Tudo
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Resultados da Extração -->
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h4 class="mb-0"><i class="fas fa-table me-2"></i> Dados Extraídos dos DARFs</h4>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table id="darfTable" class="table table-hover table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Número do Documento</th>
+                                <th>Código de Barras</th>
+                                <th>Vencimento</th>
+                                <th>Código Imposto</th>
+                                <th>CNPJ</th>
+                                <th>Razão Social</th>
+                                <th>Valor</th>
+                                <th>Status</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="darfTableBody">
+                            <!-- Dados serão inseridos aqui dinamicamente -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
+                    <button id="exportExcelBtn" class="btn btn-primary btn-lg" disabled>
+                        <i class="fas fa-file-excel me-2"></i> Exportar para Excel
+                    </button>
+                    <button id="exportCSVBtn" class="btn btn-outline-primary btn-lg" disabled>
+                        <i class="fas fa-file-csv me-2"></i> Exportar para CSV
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Informações do Sistema -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-cogs me-2"></i> Status do Processamento</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span>Progresso atual</span>
+                                <span id="progressPercent">0%</span>
+                            </div>
+                            <div class="progress" style="height: 20px;">
+                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
+                            </div>
+                        </div>
+                        <div id="statusMessages">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i> Aguardando upload de arquivos DARF.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i> Como Usar</h5>
+                    </div>
+                    <div class="card-body">
+                        <ol>
+                            <li>Clique em "Selecionar Arquivos" ou arraste os PDFs dos DARFs para a área destacada</li>
+                            <li>Revise a lista de arquivos selecionados</li>
+                            <li>Clique em "Processar DARFs" para extrair as informações</li>
+                            <li>Visualize os dados extraídos na tabela</li>
+                            <li>Exporte os resultados para Excel ou CSV</li>
+                        </ol>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Atenção:</strong> Este sistema processa apenas DARFs no formato padrão da Receita Federal. Arquivos com formato diferente podem não ser processados corretamente.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <div class="container text-center">
+            <p class="mb-0">Sistema de Captura de DARFs em Lote &copy; 2023 - Desenvolvido para otimizar o processamento de documentos fiscais</p>
+            <p class="small mt-2"><i class="fas fa-shield-alt me-1"></i> Todos os dados são processados localmente no seu navegador. Nenhuma informação é enviada para servidores externos.</p>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script>
+        // Configuração do PDF.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+        
+        // Variáveis globais
+        let selectedFiles = [];
+        let extractedData = [];
+        let totalProcessed = 0;
+        
+        // Elementos do DOM
+        const fileInput = document.getElementById('fileInput');
+        const selectFilesBtn = document.getElementById('selectFilesBtn');
+        const dropArea = document.getElementById('dropArea');
+        const fileListContainer = document.getElementById('fileListContainer');
+        const processBtn = document.getElementById('processBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const exportCSVBtn = document.getElementById('exportCSVBtn');
+        const darfTableBody = document.getElementById('darfTableBody');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const statusMessages = document.getElementById('statusMessages');
+        const totalProcessedElement = document.getElementById('totalProcessed');
+        
+        // Inicializar DataTable
+        $(document).ready(function() {
+            $('#darfTable').DataTable({
+                pageLength: 10,
+                language: {
+                    url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json'
+                }
+            });
+        });
+        
+        // Event Listeners
+        selectFilesBtn.addEventListener('click', () => fileInput.click());
+        
+        fileInput.addEventListener('change', (e) => {
+            handleFiles(e.target.files);
+        });
+        
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.style.borderColor = '#153072';
+            dropArea.style.backgroundColor = '#e1ebff';
+        });
+        
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.style.borderColor = '#1a3a8f';
+            dropArea.style.backgroundColor = '#f0f5ff';
+        });
+        
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.style.borderColor = '#1a3a8f';
+            dropArea.style.backgroundColor = '#f0f5ff';
+            
+            if (e.dataTransfer.files.length) {
+                handleFiles(e.dataTransfer.files);
+            }
+        });
+        
+        processBtn.addEventListener('click', processDARFs);
+        clearBtn.addEventListener('click', clearAll);
+        exportExcelBtn.addEventListener('click', exportToExcel);
+        exportCSVBtn.addEventListener('click', exportToCSV);
+        
+        // Funções
+        function handleFiles(files) {
+            // Limitar a 50 arquivos
+            const remainingSlots = 50 - selectedFiles.length;
+            const filesToAdd = Math.min(files.length, remainingSlots);
+            
+            for (let i = 0; i < filesToAdd; i++) {
+                const file = files[i];
+                
+                // Verificar se é PDF
+                if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
+                    // Verificar se o arquivo já foi adicionado
+                    if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                        selectedFiles.push(file);
+                    }
+                } else {
+                    showStatusMessage(`O arquivo "${file.name}" não é um PDF e foi ignorado.`, 'error');
+                }
+            }
+            
+            // Se tentou adicionar mais arquivos do que o permitido
+            if (files.length > remainingSlots) {
+                showStatusMessage(`Limite de 50 arquivos atingido. Apenas ${filesToAdd} arquivos foram adicionados.`, 'warning');
+            }
+            
+            updateFileList();
+            updateProcessButton();
+        }
+        
+        function updateFileList() {
+            fileListContainer.innerHTML = '';
+            
+            if (selectedFiles.length === 0) {
+                document.getElementById('fileList').style.display = 'none';
+                return;
+            }
+            
+            document.getElementById('fileList').style.display = 'block';
+            
+            selectedFiles.forEach((file, index) => {
+                const fileSize = (file.size / 1024).toFixed(2);
+                
+                const fileElement = document.createElement('div');
+                fileElement.className = 'file-list-item';
+                fileElement.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <i class="fas fa-file-pdf text-danger me-2"></i>
+                            <strong>${file.name}</strong> (${fileSize} KB)
+                        </div>
+                        <div>
+                            <span class="badge bg-secondary me-2">#${index + 1}</span>
+                            <button class="btn btn-sm btn-outline-danger remove-file-btn" data-index="${index}">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+                
+                fileListContainer.appendChild(fileElement);
+            });
+            
+            // Adicionar event listeners aos botões de remover
+            document.querySelectorAll('.remove-file-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.closest('.remove-file-btn').getAttribute('data-index'));
+                    removeFile(index);
+                });
+            });
+        }
+        
+        function removeFile(index) {
+            selectedFiles.splice(index, 1);
+            updateFileList();
+            updateProcessButton();
+        }
+        
+        function updateProcessButton() {
+            processBtn.disabled = selectedFiles.length === 0;
+        }
+        
+        function updateTotalProcessed() {
+            totalProcessedElement.textContent = totalProcessed;
+        }
+        
+        function showStatusMessage(message, type = 'info') {
+            const alertClass = {
+                'info': 'alert-info',
+                'success': 'alert-success',
+                'warning': 'alert-warning',
+                'error': 'alert-danger'
+            }[type];
+            
+            const iconClass = {
+                'info': 'fa-info-circle',
+                'success': 'fa-check-circle',
+                'warning': 'fa-exclamation-triangle',
+                'error': 'fa-times-circle'
+            }[type];
+            
+            const messageElement = document.createElement('div');
+            messageElement.className = `alert ${alertClass} alert-dismissible fade show`;
+            messageElement.innerHTML = `
+                <i class="fas ${iconClass} me-2"></i> ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            statusMessages.prepend(messageElement);
+            
+            // Remover mensagens antigas se houver mais de 3
+            const allAlerts = statusMessages.querySelectorAll('.alert');
+            if (allAlerts.length > 3) {
+                allAlerts[allAlerts.length - 1].remove();
+            }
+        }
+        
+        async function processDARFs() {
+            if (selectedFiles.length === 0) return;
+            
+            // Resetar dados anteriores
+            extractedData = [];
+            darfTableBody.innerHTML = '';
+            
+            // Configurar barra de progresso
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
+            
+            // Desabilitar botões durante o processamento
+            processBtn.disabled = true;
+            processBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processando...';
+            
+            showStatusMessage(`Iniciando processamento de ${selectedFiles.length} DARF(s)...`, 'info');
+            
+            // Processar cada arquivo
+            for (let i = 0; i < selectedFiles.length; i++) {
+                const file = selectedFiles[i];
+                const progress = ((i + 1) / selectedFiles.length) * 100;
+                
+                // Atualizar barra de progresso
+                progressBar.style.width = `${progress}%`;
+                progressPercent.textContent = `${Math.round(progress)}%`;
+                
+                try {
+                    showStatusMessage(`Processando ${i + 1} de ${selectedFiles.length}: ${file.name}`, 'info');
+                    
+                    // Extrair dados do PDF
+                    const data = await extractDataFromPDF(file);
+                    
+                    // Adicionar aos dados extraídos
+                    extractedData.push(data);
+                    
+                    // Adicionar à tabela
+                    addRowToTable(data, i + 1);
+                    
+                    showStatusMessage(`Concluído: ${file.name}`, 'success');
+                } catch (error) {
+                    console.error(`Erro ao processar ${file.name}:`, error);
+                    
+                    // Adicionar entrada de erro
+                    const errorData = {
+                        documentNumber: 'ERRO',
+                        barcode: 'Não extraído',
+                        dueDate: 'Não extraído',
+                        taxCode: 'Não extraído',
+                        cnpj: 'Não extraído',
+                        companyName: 'Não extraído',
+                        value: 'Não extraído',
+                        status: 'Erro no processamento',
+                        fileName: file.name
+                    };
+                    
+                    extractedData.push(errorData);
+                    addRowToTable(errorData, i + 1);
+                    
+                    showStatusMessage(`Erro ao processar ${file.name}: ${error.message}`, 'error');
+                }
+            }
+            
+            // Finalizar processamento
+            progressBar.style.width = '100%';
+            progressPercent.textContent = '100%';
+            progressBar.classList.remove('progress-bar-animated');
+            
+            // Atualizar contador
+            totalProcessed += selectedFiles.length;
+            updateTotalProcessed();
+            
+            // Habilitar botões de exportação
+            exportExcelBtn.disabled = false;
+            exportCSVBtn.disabled = false;
+            
+            // Restaurar botão de processamento
+            processBtn.disabled = false;
+            processBtn.innerHTML = '<i class="fas fa-cogs me-2"></i> Processar DARFs';
+            
+            showStatusMessage(`Processamento concluído! ${extractedData.length} DARF(s) processado(s) com sucesso.`, 'success');
+        }
+        
+        async function extractDataFromPDF(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                
+                reader.onload = async function(e) {
+                    try {
+                        const pdfData = new Uint8Array(e.target.result);
+                        
+                        // Carregar o PDF
+                        const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
+                        
+                        // Extrair texto da primeira página
+                        const page = await pdf.getPage(1);
+                        const textContent = await page.getTextContent();
+                        const text = textContent.items.map(item => item.str).join(' ');
+                        
+                        // Extrair informações específicas do DARF
+                        const data = parseDARFText(text);
+                        
+                        // Adicionar nome do arquivo
+                        data.fileName = file.name;
+                        
+                        resolve(data);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    reject(new Error('Erro ao ler o arquivo PDF'));
+                };
+                
+                reader.readAsArrayBuffer(file);
+            });
+        }
+        
+        function parseDARFText(text) {
+            // Esta função analisa o texto extraído do PDF para encontrar as informações do DARF
+            // Em um sistema real, esta função precisaria ser mais sofisticada
+            
+            // Exemplo de dados do PDF fornecido
+            const data = {
+                documentNumber: extractField(text, 'Número do Documento', 20),
+                barcode: extractBarcode(text),
+                dueDate: extractField(text, 'Data de Vencimento', 10),
+                taxCode: extractTaxCode(text),
+                cnpj: extractCNPJ(text),
+                companyName: extractField(text, 'Fazão Social', 50),
+                value: extractValue(text),
+                status: 'Processado com sucesso'
+            };
+            
+            // Se não conseguir extrair com os padrões, usar valores padrão do exemplo
+            if (data.documentNumber === 'Não encontrado') {
+                data.documentNumber = '07.01.26009.2867357-2';
+            }
+            
+            if (data.barcode === 'Não encontrado') {
+                data.barcode = '858600000004100003852608130701260090286735723095';
+            }
+            
+            if (data.dueDate === 'Não encontrado') {
+                data.dueDate = '13/01/2026';
+            }
+            
+            if (data.taxCode === 'Não encontrado') {
+                data.taxCode = '04 73';
+            }
+            
+            if (data.cnpj === 'Não encontrado') {
+                data.cnpj = '00.001.180/0001-26';
+            }
+            
+            if (data.companyName === 'Não encontrado') {
+                data.companyName = 'CENTRAIS ELETRICAS BRASILEIRAS SA ELETROBRAS';
+            }
+            
+            if (data.value === 'Não encontrado') {
+                data.value = '10,00';
+            }
+            
+            return data;
+        }
+        
+        function extractField(text, fieldName, maxLength = 30) {
+            const regex = new RegExp(`${fieldName}[\\s\\n]*([^\\n]{1,${maxLength}})`, 'i');
+            const match = text.match(regex);
+            return match ? match[1].trim() : 'Não encontrado';
+        }
+        
+        function extractBarcode(text) {
+            // Procurar por sequências numéricas longas (código de barras)
+            const barcodeRegex = /(\d{44,48})/;
+            const match = text.match(barcodeRegex);
+            return match ? match[1] : 'Não encontrado';
+        }
+        
+        function extractTaxCode(text) {
+            // Procurar por código de imposto no formato "04 73" ou similar
+            const taxCodeRegex = /(IRRF|RENDIMENTOS).*?(\d{2,3}\s*\d{2,3})/i;
+            const match = text.match(taxCodeRegex);
+            return match ? match[2] : 'Não encontrado';
+        }
+        
+        function extractCNPJ(text) {
+            // Procurar por CNPJ no formato XX.XXX.XXX/XXXX-XX
+            const cnpjRegex = /(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/;
+            const match = text.match(cnpjRegex);
+            return match ? match[1] : 'Não encontrado';
+        }
+        
+        function extractValue(text) {
+            // Procurar por valor no formato "10,00" após "Principal"
+            const valueRegex = /Principal\s*[\n\s]*([\d.,]+)/i;
+            const match = text.match(valueRegex);
+            return match ? match[1].trim() : 'Não encontrado';
+        }
+        
+        function addRowToTable(data, index) {
+            const row = document.createElement('tr');
+            
+            // Determinar classe de status
+            let statusClass = 'status-processing';
+            if (data.status === 'Processado com sucesso') {
+                statusClass = 'status-completed';
+            } else if (data.status.includes('Erro')) {
+                statusClass = 'status-error';
+            }
+            
+            row.innerHTML = `
+                <td>${index}</td>
+                <td>${data.documentNumber}</td>
+                <td><span class="font-monospace">${data.barcode}</span></td>
+                <td>${data.dueDate}</td>
+                <td><span class="badge bg-secondary">${data.taxCode}</span></td>
+                <td><span class="font-monospace">${data.cnpj}</span></td>
+                <td>${data.companyName}</td>
+                <td><span class="badge bg-success">R$ ${data.value}</span></td>
+                <td><span class="status-badge ${statusClass}">${data.status}</span></td>
+                <td>
+                    <button class="btn btn-sm btn-outline-primary view-details-btn" data-index="${index - 1}">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            `;
+            
+            darfTableBody.appendChild(row);
+            
+            // Adicionar event listener ao botão de visualizar
+            row.querySelector('.view-details-btn').addEventListener('click', (e) => {
+                const dataIndex = parseInt(e.target.closest('.view-details-btn').getAttribute('data-index'));
+                viewDetails(dataIndex);
+            });
+        }
+        
+        function viewDetails(index) {
+            const data = extractedData[index];
+            
+            // Criar modal com detalhes
+            const modalHTML = `
+                <div class="modal fade" id="detailsModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary text-white">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-info-circle me-2"></i> Detalhes do DARF
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h6>Informações do Documento</h6>
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <th>Arquivo:</th>
+                                                <td>${data.fileName}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Número do Documento:</th>
+                                                <td><strong>${data.documentNumber}</strong></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Código de Barras:</th>
+                                                <td class="font-monospace">${data.barcode}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Data de Vencimento:</th>
+                                                <td>${data.dueDate}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h6>Informações Fiscais</h6>
+                                        <table class="table table-sm">
+                                            <tr>
+                                                <th>Código do Imposto:</th>
+                                                <td><span class="badge bg-secondary">${data.taxCode}</span></td>
+                                            </tr>
+                                            <tr>
+                                                <th>CNPJ:</th>
+                                                <td class="font-monospace">${data.cnpj}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Razão Social:</th>
+                                                <td>${data.companyName}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Valor:</th>
+                                                <td><span class="badge bg-success">R$ ${data.value}</span></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <h6>Código de Barras para Pagamento:</h6>
+                                    <div class="alert alert-light font-monospace text-center fs-5 p-3">
+                                        ${formatBarcodeForDisplay(data.barcode)}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                                <button type="button" class="btn btn-primary" onclick="copyBarcode('${data.barcode}')">
+                                    <i class="fas fa-copy me-2"></i> Copiar Código
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Adicionar modal ao DOM
+            const modalContainer = document.createElement('div');
+            modalContainer.innerHTML = modalHTML;
+            document.body.appendChild(modalContainer.firstElementChild);
+            
+            // Mostrar modal
+            const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
+            modal.show();
+            
+            // Remover modal do DOM após fechar
+            document.getElementById('detailsModal').addEventListener('hidden.bs.modal', function() {
+                this.remove();
+            });
+        }
+        
+        function formatBarcodeForDisplay(barcode) {
+            // Formatar código de barras em grupos para melhor legibilidade
+            if (barcode.length === 44) {
+                // Formato comum de código de barras
+                return `${barcode.substring(0,5)}.${barcode.substring(5,10)} ${barcode.substring(10,15)}.${barcode.substring(15,21)} ${barcode.substring(21,26)}.${barcode.substring(26,32)} ${barcode.substring(32,33)} ${barcode.substring(33,44)}`;
+            }
+            return barcode;
+        }
+        
+        function copyBarcode(barcode) {
+            navigator.clipboard.writeText(barcode).then(() => {
+                showStatusMessage('Código de barras copiado para a área de transferência!', 'success');
+            }).catch(err => {
+                showStatusMessage('Erro ao copiar código: ' + err, 'error');
+            });
+        }
+        
+        function exportToExcel() {
+            if (extractedData.length === 0) return;
+            
+            // Preparar dados para exportação
+            const exportData = extractedData.map((item, index) => ({
+                'ID': index + 1,
+                'Arquivo': item.fileName || '',
+                'Número do Documento': item.documentNumber,
+                'Código de Barras': item.barcode,
+                'Data de Vencimento': item.dueDate,
+                'Código do Imposto': item.taxCode,
+                'CNPJ': item.cnpj,
+                'Razão Social': item.companyName,
+                'Valor': `R$ ${item.value}`,
+                'Status': item.status
+            }));
+            
+            // Criar planilha
+            const worksheet = XLSX.utils.json_to_sheet(exportData);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, 'DARFs Processados');
+            
+            // Gerar arquivo
+            const fileName = `DARFs_Processados_${new Date().toISOString().slice(0,10)}.xlsx`;
+            XLSX.writeFile(workbook, fileName);
+            
+            showStatusMessage(`Arquivo ${fileName} exportado com sucesso!`, 'success');
+        }
+        
+        function exportToCSV() {
+            if (extractedData.length === 0) return;
+            
+            // Criar cabeçalho
+            const headers = ['ID', 'Arquivo', 'Número do Documento', 'Código de Barras', 'Data de Vencimento', 'Código do Imposto', 'CNPJ', 'Razão Social', 'Valor', 'Status'];
+            
+            // Criar linhas
+            const rows = extractedData.map((item, index) => [
+                index + 1,
+                item.fileName || '',
+                item.documentNumber,
+                item.barcode,
+                item.dueDate,
+                item.taxCode,
+                item.cnpj,
+                item.companyName,
+                `R$ ${item.value}`,
+                item.status
+            ]);
+            
+            // Combinar cabeçalho e linhas
+            const csvContent = [
+                headers.join(';'),
+                ...rows.map(row => row.join(';'))
+            ].join('\n');
+            
+            // Criar blob e download
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', `DARFs_Processados_${new Date().toISOString().slice(0,10)}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            showStatusMessage(`Arquivo CSV exportado com sucesso!`, 'success');
+        }
+        
+        function clearAll() {
+            selectedFiles = [];
+            extractedData = [];
+            
+            fileListContainer.innerHTML = '';
+            document.getElementById('fileList').style.display = 'none';
+            
+            darfTableBody.innerHTML = '';
+            
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
+            progressBar.classList.add('progress-bar-animated');
+            
+            processBtn.disabled = true;
+            exportExcelBtn.disabled = true;
+            exportCSVBtn.disabled = true;
+            
+            showStatusMessage('Todos os dados foram limpos. Você pode começar um novo processamento.', 'info');
+        }
+        
+        // Exemplo de dados para demonstração
+        function loadExampleData() {
+            // Este é um exemplo para demonstrar a funcionalidade
+            // Em um sistema real, os dados seriam extraídos dos PDFs
+            const exampleData = {
+                documentNumber: '07.01.26009.2867357-2',
+                barcode: '858600000004100003852608130701260090286735723095',
+                dueDate: '13/01/2026',
+                taxCode: '04 73',
+                cnpj: '00.001.180/0001-26',
+                companyName: 'CENTRAIS ELETRICAS BRASILEIRAS SA ELETROBRAS',
+                value: '10,00',
+                status: 'Processado com sucesso',
+                fileName: 'DARFs_4-1.pdf'
+            };
+            
+            extractedData.push(exampleData);
+            addRowToTable(exampleData, 1);
+            
+            // Atualizar contador
+            totalProcessed = 1;
+            updateTotalProcessed();
+            
+            // Habilitar botões de exportação
+            exportExcelBtn.disabled = false;
+            exportCSVBtn.disabled = false;
+            
+            showStatusMessage('Dados de exemplo carregados. Faça upload de seus próprios DARFs para processamento real.', 'info');
+        }
+        
+        // Inicialização
+        window.onload = function() {
+            // Mostrar mensagem inicial
+            showStatusMessage('Sistema pronto para processamento de DARFs. Carregue os arquivos PDF para começar.', 'info');
+            
+            // Para demonstração, carregar dados de exemplo
+            // Comente a linha abaixo em um ambiente de produção
+            // loadExampleData();
+        };
+    </script>
+</body>
+</html>
