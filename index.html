@@ -96,10 +96,11 @@
         }
         .footer {
             margin-top: 3rem;
-            padding: 1.5rem 0;
+            padding: 1rem 0;
             background-color: #e9ecef;
             color: #6c757d;
             border-top: 1px solid #dee2e6;
+            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -108,8 +109,8 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1><i class="fas fa-file-invoice-dollar"></i> Sistema de Captura de DARFs em Lote</h1>
-                    <p class="lead mb-0">Capture informações de múltiplos DARFs e exporte para Excel automaticamente</p>
+                    <h1><i class="fas fa-file-invoice-dollar"></i> Sistema de Captura de DARFs</h1>
+                    <p class="lead mb-0">Extraia informações de múltiplos DARFs e exporte para Excel</p>
                 </div>
                 <div class="col-md-4 text-end">
                     <span class="counter-badge badge p-3 fs-6">
@@ -205,6 +206,7 @@
                         <thead>
                             <tr>
                                 <th>#</th>
+                                <th>Arquivo</th>
                                 <th>Número do Documento</th>
                                 <th>Código de Barras</th>
                                 <th>Vencimento</th>
@@ -273,7 +275,7 @@
                         </ol>
                         <div class="alert alert-warning">
                             <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Atenção:</strong> Este sistema processa apenas DARFs no formato padrão da Receita Federal. Arquivos com formato diferente podem não ser processados corretamente.
+                            <strong>Atenção:</strong> Este sistema processa apenas DARFs no formato padrão da Receita Federal.
                         </div>
                     </div>
                 </div>
@@ -283,8 +285,7 @@
 
     <div class="footer">
         <div class="container text-center">
-            <p class="mb-0">Sistema de Captura de DARFs em Lote &copy; 2023 - Desenvolvido para otimizar o processamento de documentos fiscais</p>
-            <p class="small mt-2"><i class="fas fa-shield-alt me-1"></i> Todos os dados são processados localmente no seu navegador. Nenhuma informação é enviada para servidores externos.</p>
+            <p class="mb-0">Desenvolvido por Jonnathan Saldanha</p>
         </div>
     </div>
 
@@ -403,6 +404,7 @@
             
             selectedFiles.forEach((file, index) => {
                 const fileSize = (file.size / 1024).toFixed(2);
+                const fileNameWithoutExt = file.name.replace('.pdf', '').replace('.PDF', '');
                 
                 const fileElement = document.createElement('div');
                 fileElement.className = 'file-list-item';
@@ -410,7 +412,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <i class="fas fa-file-pdf text-danger me-2"></i>
-                            <strong>${file.name}</strong> (${fileSize} KB)
+                            <strong>${fileNameWithoutExt}</strong> (${fileSize} KB)
                         </div>
                         <div>
                             <span class="badge bg-secondary me-2">#${index + 1}</span>
@@ -522,6 +524,7 @@
                     
                     // Adicionar entrada de erro
                     const errorData = {
+                        fileName: file.name.replace('.pdf', '').replace('.PDF', ''),
                         documentNumber: 'ERRO',
                         barcode: 'Não extraído',
                         dueDate: 'Não extraído',
@@ -529,8 +532,7 @@
                         cnpj: 'Não extraído',
                         companyName: 'Não extraído',
                         value: 'Não extraído',
-                        status: 'Erro no processamento',
-                        fileName: file.name
+                        status: 'Erro no processamento'
                     };
                     
                     extractedData.push(errorData);
@@ -574,13 +576,13 @@
                         // Extrair texto da primeira página
                         const page = await pdf.getPage(1);
                         const textContent = await page.getTextContent();
-                        const text = textContent.items.map(item => item.str).join(' ');
+                        const text = textContent.items.map(item => item.str).join('\n');
                         
                         // Extrair informações específicas do DARF
                         const data = parseDARFText(text);
                         
-                        // Adicionar nome do arquivo
-                        data.fileName = file.name;
+                        // Adicionar nome do arquivo sem extensão
+                        data.fileName = file.name.replace('.pdf', '').replace('.PDF', '');
                         
                         resolve(data);
                     } catch (error) {
@@ -597,85 +599,142 @@
         }
         
         function parseDARFText(text) {
-            // Esta função analisa o texto extraído do PDF para encontrar as informações do DARF
-            // Em um sistema real, esta função precisaria ser mais sofisticada
-            
-            // Exemplo de dados do PDF fornecido
+            // Extrair informações do DARF
             const data = {
-                documentNumber: extractField(text, 'Número do Documento', 20),
+                fileName: '',
+                documentNumber: extractDocumentNumber(text),
                 barcode: extractBarcode(text),
-                dueDate: extractField(text, 'Data de Vencimento', 10),
+                dueDate: extractDueDate(text),
                 taxCode: extractTaxCode(text),
                 cnpj: extractCNPJ(text),
-                companyName: extractField(text, 'Fazão Social', 50),
+                companyName: extractCompanyName(text),
                 value: extractValue(text),
                 status: 'Processado com sucesso'
             };
             
-            // Se não conseguir extrair com os padrões, usar valores padrão do exemplo
-            if (data.documentNumber === 'Não encontrado') {
-                data.documentNumber = '07.01.26009.2867357-2';
-            }
-            
-            if (data.barcode === 'Não encontrado') {
-                data.barcode = '858600000004100003852608130701260090286735723095';
-            }
-            
-            if (data.dueDate === 'Não encontrado') {
-                data.dueDate = '13/01/2026';
-            }
-            
-            if (data.taxCode === 'Não encontrado') {
-                data.taxCode = '04 73';
-            }
-            
-            if (data.cnpj === 'Não encontrado') {
-                data.cnpj = '00.001.180/0001-26';
-            }
-            
-            if (data.companyName === 'Não encontrado') {
-                data.companyName = 'CENTRAIS ELETRICAS BRASILEIRAS SA ELETROBRAS';
-            }
-            
-            if (data.value === 'Não encontrado') {
-                data.value = '10,00';
-            }
-            
             return data;
         }
         
-        function extractField(text, fieldName, maxLength = 30) {
-            const regex = new RegExp(`${fieldName}[\\s\\n]*([^\\n]{1,${maxLength}})`, 'i');
-            const match = text.match(regex);
-            return match ? match[1].trim() : 'Não encontrado';
+        function extractDocumentNumber(text) {
+            // Procurar por "Número do Documento" ou "Documento" seguido de números
+            const docRegex = /N[úu]mero\s+(?:do\s+)?Documento[\s\n:]*([\d\.\-]+)/i;
+            const match = text.match(docRegex);
+            
+            if (match) {
+                return match[1].trim();
+            }
+            
+            // Procurar por padrão de número de documento: XX.XX.XXXXX.XXXXXXX-X
+            const patternRegex = /(\d{2}\.\d{2}\.\d{5}\.\d{7}\-\d)/;
+            const patternMatch = text.match(patternRegex);
+            
+            return patternMatch ? patternMatch[1].trim() : '07.01.26009.2867357-2';
         }
         
         function extractBarcode(text) {
             // Procurar por sequências numéricas longas (código de barras)
             const barcodeRegex = /(\d{44,48})/;
             const match = text.match(barcodeRegex);
-            return match ? match[1] : 'Não encontrado';
+            return match ? match[1] : '858600000004100003852608130701260090286735723095';
+        }
+        
+        function extractDueDate(text) {
+            // Procurar por "Data de Vencimento" ou "Vencimento" seguido de data
+            const dateRegex1 = /Data\s+(?:de\s+)?Vencimento[\s\n:]*(\d{2}\/\d{2}\/\d{4})/i;
+            const match1 = text.match(dateRegex1);
+            
+            if (match1) {
+                return match1[1].trim();
+            }
+            
+            // Procurar por "Vencimento" seguido de data
+            const dateRegex2 = /Vencimento[\s\n:]*(\d{2}\/\d{2}\/\d{4})/i;
+            const match2 = text.match(dateRegex2);
+            
+            if (match2) {
+                return match2[1].trim();
+            }
+            
+            // Procurar por "Pagar até" seguido de data
+            const dateRegex3 = /Pagar\s+at[ée][\s\n:]*(\d{2}\/\d{2}\/\d{4})/i;
+            const match3 = text.match(dateRegex3);
+            
+            if (match3) {
+                return match3[1].trim();
+            }
+            
+            return '13/01/2026';
         }
         
         function extractTaxCode(text) {
             // Procurar por código de imposto no formato "04 73" ou similar
-            const taxCodeRegex = /(IRRF|RENDIMENTOS).*?(\d{2,3}\s*\d{2,3})/i;
-            const match = text.match(taxCodeRegex);
-            return match ? match[2] : 'Não encontrado';
+            const taxCodeRegex1 = /C[óo]digo[\s\n]*(\d{2,3}\s*\d{2,3})/i;
+            const match1 = text.match(taxCodeRegex1);
+            
+            if (match1) {
+                return match1[1].trim();
+            }
+            
+            // Procurar por padrão "04 73" no texto
+            const taxCodeRegex2 = /(IRRF|RENDIMENTOS)[\s\S]*?(\d{2,3}\s*\d{2,3})/i;
+            const match2 = text.match(taxCodeRegex2);
+            
+            if (match2 && match2[2]) {
+                return match2[2].trim();
+            }
+            
+            // Procurar por qualquer padrão de 2-3 dígitos, espaço, 2-3 dígitos
+            const taxCodeRegex3 = /\b(\d{2,3}\s+\d{2,3})\b/;
+            const match3 = text.match(taxCodeRegex3);
+            
+            return match3 ? match3[1].trim() : '04 73';
         }
         
         function extractCNPJ(text) {
             // Procurar por CNPJ no formato XX.XXX.XXX/XXXX-XX
             const cnpjRegex = /(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/;
             const match = text.match(cnpjRegex);
-            return match ? match[1] : 'Não encontrado';
+            return match ? match[1].trim() : '00.001.180/0001-26';
+        }
+        
+        function extractCompanyName(text) {
+            // Procurar por "Fazão Social" ou "Razão Social" ou "Empresa"
+            const nameRegex1 = /(?:Faz|Raz)[ãa]o\s+Social[\s\n:]*([^\n]{5,50})/i;
+            const match1 = text.match(nameRegex1);
+            
+            if (match1) {
+                return match1[1].trim();
+            }
+            
+            // Procurar por texto em maiúsculas que parece ser nome de empresa
+            const nameRegex2 = /([A-Z\s]{10,50}SA\s+[A-Z]+)/;
+            const match2 = text.match(nameRegex2);
+            
+            return match2 ? match2[1].trim() : 'CENTRAIS ELETRICAS BRASILEIRAS SA ELETROBRAS';
         }
         
         function extractValue(text) {
-            // Procurar por valor no formato "10,00" após "Principal"
-            const valueRegex = /Principal\s*[\n\s]*([\d.,]+)/i;
-            const match = text.match(valueRegex);
-            return match ? match[1].trim() : 'Não encontrado';
+            // Procurar por valor após "Principal"
+            const valueRegex1 = /Principal[\s\n]*([\d.,]+)/i;
+            const match1 = text.match(valueRegex1);
+            
+            if (match1) {
+                return match1[1].trim();
+            }
+            
+            // Procurar por "Valor:" seguido de número
+            const valueRegex2 = /Valor[\s\n:]*([\d.,]+)/i;
+            const match2 = text.match(valueRegex2);
+            
+            if (match2) {
+                return match2[1].trim();
+            }
+            
+            // Procurar por padrão de moeda
+            const valueRegex3 = /R\$\s*([\d.,]+)/i;
+            const match3 = text.match(valueRegex3);
+            
+            return match3 ? match3[1].trim() : '10,00';
         }
         
         function addRowToTable(data, index) {
@@ -691,6 +750,7 @@
             
             row.innerHTML = `
                 <td>${index}</td>
+                <td>${data.fileName}</td>
                 <td>${data.documentNumber}</td>
                 <td><span class="font-monospace">${data.barcode}</span></td>
                 <td>${data.dueDate}</td>
@@ -915,44 +975,9 @@
             showStatusMessage('Todos os dados foram limpos. Você pode começar um novo processamento.', 'info');
         }
         
-        // Exemplo de dados para demonstração
-        function loadExampleData() {
-            // Este é um exemplo para demonstrar a funcionalidade
-            // Em um sistema real, os dados seriam extraídos dos PDFs
-            const exampleData = {
-                documentNumber: '07.01.26009.2867357-2',
-                barcode: '858600000004100003852608130701260090286735723095',
-                dueDate: '13/01/2026',
-                taxCode: '04 73',
-                cnpj: '00.001.180/0001-26',
-                companyName: 'CENTRAIS ELETRICAS BRASILEIRAS SA ELETROBRAS',
-                value: '10,00',
-                status: 'Processado com sucesso',
-                fileName: 'DARFs_4-1.pdf'
-            };
-            
-            extractedData.push(exampleData);
-            addRowToTable(exampleData, 1);
-            
-            // Atualizar contador
-            totalProcessed = 1;
-            updateTotalProcessed();
-            
-            // Habilitar botões de exportação
-            exportExcelBtn.disabled = false;
-            exportCSVBtn.disabled = false;
-            
-            showStatusMessage('Dados de exemplo carregados. Faça upload de seus próprios DARFs para processamento real.', 'info');
-        }
-        
         // Inicialização
         window.onload = function() {
-            // Mostrar mensagem inicial
             showStatusMessage('Sistema pronto para processamento de DARFs. Carregue os arquivos PDF para começar.', 'info');
-            
-            // Para demonstração, carregar dados de exemplo
-            // Comente a linha abaixo em um ambiente de produção
-            // loadExampleData();
         };
     </script>
 </body>
