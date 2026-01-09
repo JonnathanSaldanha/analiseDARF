@@ -667,7 +667,44 @@
         }
         
         function extractTaxCode(text) {
-            // Procurar por código de imposto no formato "04 73" ou similar
+            // Agora corrigido para buscar o código abaixo do título "Código"
+            // Primeiro, encontrar a seção onde está o código
+            const lines = text.split('\n');
+            
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+                
+                // Se encontrou "Código" na linha
+                if (line.toLowerCase().includes('código')) {
+                    // Verificar a próxima linha para o código do imposto
+                    if (i + 1 < lines.length) {
+                        const nextLine = lines[i + 1].trim();
+                        // Procurar por padrão de código (04 73 ou 0473)
+                        const codeMatch = nextLine.match(/(\d{2,3}\s*\d{2,3})/);
+                        if (codeMatch) {
+                            return codeMatch[1].trim();
+                        }
+                    }
+                    
+                    // Se não encontrou na próxima linha, procurar na mesma linha após "Código"
+                    const sameLineMatch = line.match(/C[óo]digo[\s:]*(\d{2,3}\s*\d{2,3})/i);
+                    if (sameLineMatch) {
+                        return sameLineMatch[1].trim();
+                    }
+                }
+                
+                // Procurar por padrão específico "04 73" ou "0473"
+                if (line.match(/^0?\d{2,3}\s?0?\d{2,3}$/)) {
+                    // Formatar para ter espaço se necessário (0473 -> 04 73)
+                    let code = line.replace(/\s/g, '');
+                    if (code.length === 4) {
+                        code = code.substring(0, 2) + ' ' + code.substring(2);
+                    }
+                    return code;
+                }
+            }
+            
+            // Se não encontrou na busca específica, tentar o método antigo
             const taxCodeRegex1 = /C[óo]digo[\s\n]*(\d{2,3}\s*\d{2,3})/i;
             const match1 = text.match(taxCodeRegex1);
             
@@ -675,19 +712,7 @@
                 return match1[1].trim();
             }
             
-            // Procurar por padrão "04 73" no texto
-            const taxCodeRegex2 = /(IRRF|RENDIMENTOS)[\s\S]*?(\d{2,3}\s*\d{2,3})/i;
-            const match2 = text.match(taxCodeRegex2);
-            
-            if (match2 && match2[2]) {
-                return match2[2].trim();
-            }
-            
-            // Procurar por qualquer padrão de 2-3 dígitos, espaço, 2-3 dígitos
-            const taxCodeRegex3 = /\b(\d{2,3}\s+\d{2,3})\b/;
-            const match3 = text.match(taxCodeRegex3);
-            
-            return match3 ? match3[1].trim() : '04 73';
+            return '04 73';
         }
         
         function extractCNPJ(text) {
