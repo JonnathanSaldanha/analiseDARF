@@ -3,51 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistema de Captura de DARFs</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap5.min.css">
+    <title>Leitor de DARFs - Extração de Código de Barras</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
+        :root {
+            --primary: #1a3a8f;
+            --primary-dark: #153072;
+            --accent: #ffcc00;
+            --success: #28a745;
+            --bg: #f8f9fa;
+        }
+        
         body {
-            background-color: #f8f9fa;
+            background-color: var(--bg);
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
+        
         .header {
-            background: linear-gradient(135deg, #1a3a8f 0%, #2a5bd7 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, #2a5bd7 100%);
             color: white;
             padding: 1.5rem 0;
             margin-bottom: 2rem;
-            border-bottom: 5px solid #ffcc00;
+            border-bottom: 5px solid var(--accent);
         }
+        
         .card {
             border-radius: 12px;
             border: none;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-            transition: transform 0.2s;
             margin-bottom: 1.5rem;
         }
-        .card:hover {
-            transform: translateY(-2px);
-        }
+        
         .btn-primary {
-            background-color: #1a3a8f;
-            border-color: #1a3a8f;
+            background-color: var(--primary);
+            border-color: var(--primary);
         }
+        
         .btn-primary:hover {
-            background-color: #153072;
-            border-color: #153072;
+            background-color: var(--primary-dark);
+            border-color: var(--primary-dark);
         }
-        .btn-success {
-            background-color: #28a745;
-            border-color: #28a745;
-        }
-        .btn-warning {
-            background-color: #ffcc00;
-            border-color: #ffcc00;
-            color: #333;
-        }
+        
         .file-upload-area {
-            border: 3px dashed #1a3a8f;
+            border: 3px dashed var(--primary);
             border-radius: 12px;
             padding: 3rem;
             text-align: center;
@@ -55,52 +54,63 @@
             cursor: pointer;
             transition: all 0.3s;
         }
+        
         .file-upload-area:hover {
             background-color: #e1ebff;
-            border-color: #153072;
+            border-color: var(--primary-dark);
         }
-        .file-list-item {
-            background-color: #f8f9fa;
-            border-left: 4px solid #1a3a8f;
+        
+        .result-card {
+            background: linear-gradient(135deg, #e8f5e9 0%, #f1f8e9 100%);
+            border-left: 5px solid var(--success);
+        }
+        
+        .barcode-display {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2rem;
+            background: #fff;
             padding: 1rem;
-            margin-bottom: 0.5rem;
+            border-radius: 8px;
+            border: 2px solid var(--primary);
+            word-break: break-all;
+            letter-spacing: 2px;
+        }
+        
+        .debug-section {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            font-family: 'Courier New', monospace;
+            font-size: 0.8rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .field-highlight {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            margin: 0.1rem;
             border-radius: 4px;
         }
-        .table th {
-            background-color: #1a3a8f;
+        
+        .field-1 { background: #bbdefb; }
+        .field-2 { background: #c8e6c9; }
+        .field-3 { background: #fff9c4; }
+        .field-4 { background: #ffccbc; }
+        
+        .status-valid { color: var(--success); }
+        .status-invalid { color: #dc3545; }
+        
+        .table-results th {
+            background-color: var(--primary);
             color: white;
-            border: none;
         }
-        .status-badge {
-            padding: 0.4rem 0.8rem;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-        .status-processing {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        .status-completed {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .status-error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
+        
         .counter-badge {
-            background-color: #ffcc00;
+            background-color: var(--accent);
             color: #333;
             font-weight: bold;
-        }
-        .footer {
-            margin-top: 3rem;
-            padding: 1rem 0;
-            background-color: #e9ecef;
-            color: #6c757d;
-            border-top: 1px solid #dee2e6;
-            font-size: 0.9rem;
         }
     </style>
 </head>
@@ -109,13 +119,13 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-md-8">
-                    <h1><i class="fas fa-file-invoice-dollar"></i> Sistema de Captura de DARFs</h1>
-                    <p class="lead mb-0">Extraia informações de múltiplos DARFs e exporte para Excel</p>
+                    <h1><i class="fas fa-file-invoice-dollar"></i> Leitor de DARFs</h1>
+                    <p class="lead mb-0">Extração precisa de código de barras de documentos DARF</p>
                 </div>
                 <div class="col-md-4 text-end">
                     <span class="counter-badge badge p-3 fs-6">
                         <i class="fas fa-file-alt me-2"></i>
-                        <span id="totalProcessed">0</span> DARFs processados
+                        <span id="totalProcessed">0</span> processados
                     </span>
                 </div>
             </div>
@@ -123,219 +133,142 @@
     </div>
 
     <div class="container">
-        <!-- Área de Upload -->
+        <!-- Upload -->
         <div class="card">
             <div class="card-header bg-primary text-white">
-                <h4 class="mb-0"><i class="fas fa-cloud-upload-alt me-2"></i> Carregar DARFs</h4>
+                <h4 class="mb-0"><i class="fas fa-cloud-upload-alt me-2"></i> Upload de DARFs</h4>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-lg-8">
-                        <div id="dropArea" class="file-upload-area">
-                            <i class="fas fa-file-pdf fa-4x mb-3 text-primary"></i>
-                            <h4>Arraste e solte seus arquivos DARF aqui</h4>
-                            <p class="text-muted mb-4">ou clique para selecionar</p>
-                            <input type="file" id="fileInput" class="d-none" multiple accept=".pdf">
-                            <button id="selectFilesBtn" class="btn btn-primary btn-lg">
-                                <i class="fas fa-folder-open me-2"></i> Selecionar Arquivos
-                            </button>
-                            <p class="mt-3 small text-muted">Formatos suportados: PDF. Máximo: 50 arquivos por lote.</p>
-                        </div>
-                    </div>
-                    <div class="col-lg-4">
-                        <div class="card border-warning">
-                            <div class="card-header bg-warning">
-                                <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> Informações Extraídas</h5>
-                            </div>
-                            <div class="card-body">
-                                <ul class="list-group list-group-flush">
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Código de Barras
-                                        <span class="badge bg-primary">✓</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Data de Vencimento
-                                        <span class="badge bg-primary">✓</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Código do Imposto
-                                        <span class="badge bg-primary">✓</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        CNPJ
-                                        <span class="badge bg-primary">✓</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Valor Principal
-                                        <span class="badge bg-primary">✓</span>
-                                    </li>
-                                    <li class="list-group-item d-flex justify-content-between align-items-center">
-                                        Número do Documento
-                                        <span class="badge bg-primary">✓</span>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
+                <div class="file-upload-area" id="dropArea">
+                    <i class="fas fa-file-pdf fa-4x mb-3 text-primary"></i>
+                    <h4>Arraste PDFs aqui ou clique para selecionar</h4>
+                    <p class="text-muted mb-3">Suporta múltiplos arquivos PDF</p>
+                    <input type="file" id="fileInput" class="d-none" multiple accept=".pdf">
+                    <button id="selectBtn" class="btn btn-primary btn-lg">
+                        <i class="fas fa-folder-open me-2"></i> Selecionar Arquivos
+                    </button>
                 </div>
                 
-                <div id="fileList" class="mt-4">
-                    <h5 class="mb-3">Arquivos selecionados:</h5>
-                    <div id="fileListContainer"></div>
-                </div>
-                
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                    <button id="processBtn" class="btn btn-success btn-lg" disabled>
-                        <i class="fas fa-cogs me-2"></i> Processar DARFs
-                    </button>
-                    <button id="clearBtn" class="btn btn-outline-secondary btn-lg">
-                        <i class="fas fa-trash-alt me-2"></i> Limpar Tudo
-                    </button>
+                <div id="fileListContainer" class="mt-4" style="display: none;">
+                    <h5>Arquivos selecionados:</h5>
+                    <div id="fileList"></div>
+                    <div class="mt-3">
+                        <button id="processBtn" class="btn btn-success btn-lg me-2">
+                            <i class="fas fa-cogs me-2"></i> Processar DARFs
+                        </button>
+                        <button id="clearBtn" class="btn btn-outline-secondary">
+                            <i class="fas fa-trash me-2"></i> Limpar
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
         
-        <!-- Resultados da Extração -->
-        <div class="card">
+        <!-- Resultados -->
+        <div class="card" id="resultsCard" style="display: none;">
             <div class="card-header bg-success text-white">
-                <h4 class="mb-0"><i class="fas fa-table me-2"></i> Dados Extraídos dos DARFs</h4>
+                <h4 class="mb-0"><i class="fas fa-check-circle me-2"></i> Resultados da Extração</h4>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table id="darfTable" class="table table-hover table-striped">
+                    <table class="table table-hover table-results">
                         <thead>
                             <tr>
                                 <th>#</th>
                                 <th>Arquivo</th>
-                                <th>Número do Documento</th>
-                                <th>Código de Barras</th>
+                                <th>Código de Barras (44 dígitos)</th>
                                 <th>Vencimento</th>
-                                <th>Código Imposto</th>
                                 <th>CNPJ</th>
-                                <th>Razão Social</th>
                                 <th>Valor</th>
                                 <th>Status</th>
-                                <th>Ações</th>
                             </tr>
                         </thead>
-                        <tbody id="darfTableBody">
-                            <!-- Dados serão inseridos aqui dinamicamente -->
-                        </tbody>
+                        <tbody id="resultsBody"></tbody>
                     </table>
                 </div>
                 
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end mt-4">
-                    <button id="exportExcelBtn" class="btn btn-primary btn-lg" disabled>
-                        <i class="fas fa-file-excel me-2"></i> Exportar para Excel
+                <div class="mt-3">
+                    <button id="exportBtn" class="btn btn-primary">
+                        <i class="fas fa-file-excel me-2"></i> Exportar Excel
                     </button>
-                    <button id="exportCSVBtn" class="btn btn-outline-primary btn-lg" disabled>
-                        <i class="fas fa-file-csv me-2"></i> Exportar para CSV
+                    <button id="copyAllBtn" class="btn btn-outline-primary ms-2">
+                        <i class="fas fa-copy me-2"></i> Copiar Códigos
                     </button>
                 </div>
             </div>
         </div>
         
-        <!-- Informações do Sistema -->
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-cogs me-2"></i> Status do Processamento</h5>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <div class="d-flex justify-content-between mb-1">
-                                <span>Progresso atual</span>
-                                <span id="progressPercent">0%</span>
-                            </div>
-                            <div class="progress" style="height: 20px;">
-                                <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"></div>
-                            </div>
-                        </div>
-                        <div id="statusMessages">
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i> Aguardando upload de arquivos DARF.
-                            </div>
-                        </div>
-                    </div>
-                </div>
+        <!-- Debug -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-bug me-2"></i> Log de Debug
+                    <button class="btn btn-sm btn-outline-secondary float-end" onclick="clearDebug()">Limpar</button>
+                </h5>
             </div>
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="mb-0"><i class="fas fa-question-circle me-2"></i> Como Usar</h5>
-                    </div>
-                    <div class="card-body">
-                        <ol>
-                            <li>Clique em "Selecionar Arquivos" ou arraste os PDFs dos DARFs para a área destacada</li>
-                            <li>Revise a lista de arquivos selecionados</li>
-                            <li>Clique em "Processar DARFs" para extrair as informações</li>
-                            <li>Visualize os dados extraídos na tabela</li>
-                            <li>Exporte os resultados para Excel ou CSV</li>
-                        </ol>
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Atenção:</strong> Este sistema processa apenas DARFs no formato padrão da Receita Federal.
-                        </div>
-                    </div>
+            <div class="card-body">
+                <div class="debug-section" id="debugLog">
+                    <p class="text-muted">Os logs de processamento aparecerão aqui...</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="footer">
-        <div class="container text-center">
-            <p class="mb-0">Desenvolvido por Jonnathan Saldanha</p>
-        </div>
-    </div>
-
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
-    <script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap5.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
     <script>
         // Configuração do PDF.js
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
         
         // Variáveis globais
         let selectedFiles = [];
-        let extractedData = [];
-        let totalProcessed = 0;
+        let results = [];
         
-        // Elementos do DOM
+        // Elementos DOM
         const fileInput = document.getElementById('fileInput');
-        const selectFilesBtn = document.getElementById('selectFilesBtn');
+        const selectBtn = document.getElementById('selectBtn');
         const dropArea = document.getElementById('dropArea');
         const fileListContainer = document.getElementById('fileListContainer');
+        const fileList = document.getElementById('fileList');
         const processBtn = document.getElementById('processBtn');
         const clearBtn = document.getElementById('clearBtn');
-        const exportExcelBtn = document.getElementById('exportExcelBtn');
-        const exportCSVBtn = document.getElementById('exportCSVBtn');
-        const darfTableBody = document.getElementById('darfTableBody');
-        const progressBar = document.getElementById('progressBar');
-        const progressPercent = document.getElementById('progressPercent');
-        const statusMessages = document.getElementById('statusMessages');
-        const totalProcessedElement = document.getElementById('totalProcessed');
+        const resultsCard = document.getElementById('resultsCard');
+        const resultsBody = document.getElementById('resultsBody');
+        const debugLog = document.getElementById('debugLog');
+        const totalProcessed = document.getElementById('totalProcessed');
         
-        // Inicializar DataTable
-        $(document).ready(function() {
-            $('#darfTable').DataTable({
-                pageLength: 10,
-                language: {
-                    url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/pt-BR.json'
-                }
-            });
-        });
+        // Funções de debug
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            const colors = {
+                info: '#0d6efd',
+                success: '#198754',
+                warning: '#ffc107',
+                error: '#dc3545'
+            };
+            
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<span style="color: ${colors[type]}">[${time}] ${message}</span>`;
+            debugLog.appendChild(logEntry);
+            debugLog.scrollTop = debugLog.scrollHeight;
+            
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function clearDebug() {
+            debugLog.innerHTML = '<p class="text-muted">Log limpo.</p>';
+        }
         
         // Event Listeners
-        selectFilesBtn.addEventListener('click', () => fileInput.click());
-        
-        fileInput.addEventListener('change', (e) => {
-            handleFiles(e.target.files);
+        selectBtn.addEventListener('click', () => fileInput.click());
+        dropArea.addEventListener('click', (e) => {
+            if (e.target === dropArea || e.target.tagName === 'I' || e.target.tagName === 'H4' || e.target.tagName === 'P') {
+                fileInput.click();
+            }
         });
+        
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
         
         dropArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -352,715 +285,490 @@
             e.preventDefault();
             dropArea.style.borderColor = '#1a3a8f';
             dropArea.style.backgroundColor = '#f0f5ff';
-            
-            if (e.dataTransfer.files.length) {
-                handleFiles(e.dataTransfer.files);
-            }
+            handleFiles(e.dataTransfer.files);
         });
         
-        processBtn.addEventListener('click', processDARFs);
+        processBtn.addEventListener('click', processFiles);
         clearBtn.addEventListener('click', clearAll);
-        exportExcelBtn.addEventListener('click', exportToExcel);
-        exportCSVBtn.addEventListener('click', exportToCSV);
+        document.getElementById('exportBtn').addEventListener('click', exportToExcel);
+        document.getElementById('copyAllBtn').addEventListener('click', copyAllBarcodes);
         
-        // Funções
         function handleFiles(files) {
-            // Limitar a 50 arquivos
-            const remainingSlots = 50 - selectedFiles.length;
-            const filesToAdd = Math.min(files.length, remainingSlots);
-            
-            for (let i = 0; i < filesToAdd; i++) {
-                const file = files[i];
-                
-                // Verificar se é PDF
+            for (const file of files) {
                 if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
-                    // Verificar se o arquivo já foi adicionado
-                    if (!selectedFiles.some(f => f.name === file.name && f.size === file.size)) {
+                    if (!selectedFiles.some(f => f.name === file.name)) {
                         selectedFiles.push(file);
+                        log(`Arquivo adicionado: ${file.name}`, 'info');
                     }
-                } else {
-                    showStatusMessage(`O arquivo "${file.name}" não é um PDF e foi ignorado.`, 'error');
                 }
             }
-            
-            // Se tentou adicionar mais arquivos do que o permitido
-            if (files.length > remainingSlots) {
-                showStatusMessage(`Limite de 50 arquivos atingido. Apenas ${filesToAdd} arquivos foram adicionados.`, 'warning');
-            }
-            
             updateFileList();
-            updateProcessButton();
         }
         
         function updateFileList() {
-            fileListContainer.innerHTML = '';
-            
             if (selectedFiles.length === 0) {
-                document.getElementById('fileList').style.display = 'none';
+                fileListContainer.style.display = 'none';
                 return;
             }
             
-            document.getElementById('fileList').style.display = 'block';
-            
-            selectedFiles.forEach((file, index) => {
-                const fileSize = (file.size / 1024).toFixed(2);
-                const fileNameWithoutExt = file.name.replace('.pdf', '').replace('.PDF', '');
-                
-                const fileElement = document.createElement('div');
-                fileElement.className = 'file-list-item';
-                fileElement.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <i class="fas fa-file-pdf text-danger me-2"></i>
-                            <strong>${fileNameWithoutExt}</strong> (${fileSize} KB)
-                        </div>
-                        <div>
-                            <span class="badge bg-secondary me-2">#${index + 1}</span>
-                            <button class="btn btn-sm btn-outline-danger remove-file-btn" data-index="${index}">
-                                <i class="fas fa-times"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-                
-                fileListContainer.appendChild(fileElement);
-            });
-            
-            // Adicionar event listeners aos botões de remover
-            document.querySelectorAll('.remove-file-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    const index = parseInt(e.target.closest('.remove-file-btn').getAttribute('data-index'));
-                    removeFile(index);
-                });
-            });
+            fileListContainer.style.display = 'block';
+            fileList.innerHTML = selectedFiles.map((file, i) => `
+                <div class="alert alert-secondary py-2 mb-2">
+                    <i class="fas fa-file-pdf text-danger me-2"></i>
+                    ${file.name}
+                    <button class="btn btn-sm btn-outline-danger float-end py-0" onclick="removeFile(${i})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
         }
         
         function removeFile(index) {
             selectedFiles.splice(index, 1);
             updateFileList();
-            updateProcessButton();
         }
         
-        function updateProcessButton() {
-            processBtn.disabled = selectedFiles.length === 0;
+        function clearAll() {
+            selectedFiles = [];
+            results = [];
+            fileInput.value = '';
+            updateFileList();
+            resultsCard.style.display = 'none';
+            resultsBody.innerHTML = '';
+            clearDebug();
         }
         
-        function updateTotalProcessed() {
-            totalProcessedElement.textContent = totalProcessed;
-        }
-        
-        function showStatusMessage(message, type = 'info') {
-            const alertClass = {
-                'info': 'alert-info',
-                'success': 'alert-success',
-                'warning': 'alert-warning',
-                'error': 'alert-danger'
-            }[type];
-            
-            const iconClass = {
-                'info': 'fa-info-circle',
-                'success': 'fa-check-circle',
-                'warning': 'fa-exclamation-triangle',
-                'error': 'fa-times-circle'
-            }[type];
-            
-            const messageElement = document.createElement('div');
-            messageElement.className = `alert ${alertClass} alert-dismissible fade show`;
-            messageElement.innerHTML = `
-                <i class="fas ${iconClass} me-2"></i> ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            `;
-            
-            statusMessages.prepend(messageElement);
-            
-            // Remover mensagens antigas se houver mais de 3
-            const allAlerts = statusMessages.querySelectorAll('.alert');
-            if (allAlerts.length > 3) {
-                allAlerts[allAlerts.length - 1].remove();
-            }
-        }
-        
-        async function processDARFs() {
+        async function processFiles() {
             if (selectedFiles.length === 0) return;
             
-            // Resetar dados anteriores
-            extractedData = [];
-            darfTableBody.innerHTML = '';
-            
-            // Configurar barra de progresso
-            progressBar.style.width = '0%';
-            progressPercent.textContent = '0%';
-            
-            // Desabilitar botões durante o processamento
+            results = [];
+            resultsBody.innerHTML = '';
             processBtn.disabled = true;
             processBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i> Processando...';
             
-            showStatusMessage(`Iniciando processamento de ${selectedFiles.length} DARF(s)...`, 'info');
+            log('=== INICIANDO PROCESSAMENTO ===', 'info');
             
-            // Processar cada arquivo
             for (let i = 0; i < selectedFiles.length; i++) {
                 const file = selectedFiles[i];
-                const progress = ((i + 1) / selectedFiles.length) * 100;
-                
-                // Atualizar barra de progresso
-                progressBar.style.width = `${progress}%`;
-                progressPercent.textContent = `${Math.round(progress)}%`;
+                log(`Processando: ${file.name}`, 'info');
                 
                 try {
-                    showStatusMessage(`Processando ${i + 1} de ${selectedFiles.length}: ${file.name}`, 'info');
-                    
-                    // Extrair dados do PDF
-                    const data = await extractDataFromPDF(file);
-                    
-                    // Adicionar aos dados extraídos
-                    extractedData.push(data);
-                    
-                    // Adicionar à tabela
-                    addRowToTable(data, i + 1);
-                    
-                    showStatusMessage(`Concluído: ${file.name}`, 'success');
+                    const data = await extractDARFData(file);
+                    data.fileName = file.name.replace(/\.pdf$/i, '');
+                    results.push(data);
+                    addResultRow(data, i + 1);
+                    log(`✓ Sucesso: ${file.name} - Código: ${data.barcode}`, 'success');
                 } catch (error) {
-                    console.error(`Erro ao processar ${file.name}:`, error);
-                    
-                    // Adicionar entrada de erro
-                    const errorData = {
-                        fileName: file.name.replace('.pdf', '').replace('.PDF', ''),
-                        documentNumber: 'ERRO',
-                        barcode: 'Não extraído',
-                        dueDate: 'Não extraído',
-                        taxCode: 'Não extraído',
-                        cnpj: 'Não extraído',
-                        companyName: 'Não extraído',
-                        value: 'Não extraído',
-                        status: 'Erro no processamento'
-                    };
-                    
-                    extractedData.push(errorData);
-                    addRowToTable(errorData, i + 1);
-                    
-                    showStatusMessage(`Erro ao processar ${file.name}: ${error.message}`, 'error');
+                    log(`✗ Erro em ${file.name}: ${error.message}`, 'error');
+                    results.push({
+                        fileName: file.name,
+                        barcode: 'ERRO',
+                        dueDate: '-',
+                        cnpj: '-',
+                        value: '-',
+                        status: 'Erro'
+                    });
+                    addResultRow(results[results.length - 1], i + 1);
                 }
             }
             
-            // Finalizar processamento
-            progressBar.style.width = '100%';
-            progressPercent.textContent = '100%';
-            progressBar.classList.remove('progress-bar-animated');
-            
-            // Atualizar contador
-            totalProcessed += selectedFiles.length;
-            updateTotalProcessed();
-            
-            // Habilitar botões de exportação
-            exportExcelBtn.disabled = false;
-            exportCSVBtn.disabled = false;
-            
-            // Restaurar botão de processamento
+            resultsCard.style.display = 'block';
             processBtn.disabled = false;
             processBtn.innerHTML = '<i class="fas fa-cogs me-2"></i> Processar DARFs';
+            totalProcessed.textContent = parseInt(totalProcessed.textContent) + selectedFiles.length;
             
-            showStatusMessage(`Processamento concluído! ${extractedData.length} DARF(s) processado(s) com sucesso.`, 'success');
+            log('=== PROCESSAMENTO CONCLUÍDO ===', 'success');
         }
         
-        async function extractDataFromPDF(file) {
+        async function extractDARFData(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
                 
                 reader.onload = async function(e) {
                     try {
                         const pdfData = new Uint8Array(e.target.result);
+                        const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
                         
-                        // Carregar o PDF
-                        const pdf = await pdfjsLib.getDocument({data: pdfData}).promise;
+                        log(`PDF carregado: ${pdf.numPages} página(s)`, 'info');
                         
-                        // Extrair texto da primeira página
-                        const page = await pdf.getPage(1);
-                        const textContent = await page.getTextContent();
-                        const text = textContent.items.map(item => item.str).join('\n');
+                        // Extrair texto de todas as páginas
+                        let fullText = '';
+                        let textItems = [];
                         
-                        // Extrair informações específicas do DARF
-                        const data = parseDARFText(text);
+                        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                            const page = await pdf.getPage(pageNum);
+                            const textContent = await page.getTextContent();
+                            
+                            // Armazenar items com suas posições
+                            textContent.items.forEach(item => {
+                                textItems.push({
+                                    text: item.str,
+                                    x: item.transform[4],
+                                    y: item.transform[5]
+                                });
+                            });
+                            
+                            // Texto separado por espaço
+                            fullText += textContent.items.map(item => item.str).join(' ') + ' ';
+                        }
                         
-                        // Adicionar nome do arquivo sem extensão
-                        data.fileName = file.name.replace('.pdf', '').replace('.PDF', '');
+                        log(`Texto extraído (${fullText.length} caracteres)`, 'info');
+                        log(`Primeiros 200 chars: ${fullText.substring(0, 200)}`, 'info');
                         
-                        resolve(data);
+                        // Extrair dados
+                        const barcode = extractBarcode(fullText, textItems);
+                        const dueDate = extractDueDate(fullText);
+                        const cnpj = extractCNPJ(fullText);
+                        const value = extractValue(fullText);
+                        
+                        resolve({
+                            barcode: barcode,
+                            dueDate: dueDate,
+                            cnpj: cnpj,
+                            value: value,
+                            status: barcode.length === 44 ? 'OK' : 'Verificar'
+                        });
+                        
                     } catch (error) {
                         reject(error);
                     }
                 };
                 
-                reader.onerror = function() {
-                    reject(new Error('Erro ao ler o arquivo PDF'));
-                };
-                
+                reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
                 reader.readAsArrayBuffer(file);
             });
         }
         
-        function parseDARFText(text) {
-            // Extrair informações do DARF
-            const data = {
-                fileName: '',
-                documentNumber: extractDocumentNumber(text),
-                barcode: extractBarcode(text),
-                dueDate: extractDueDate(text),
-                taxCode: extractTaxCode(text),
-                cnpj: extractCNPJ(text),
-                companyName: extractCompanyName(text),
-                value: extractValue(text),
-                status: 'Processado com sucesso'
-            };
+        /**
+         * VALIDAÇÃO MÓDULO 10 - Usado para dígitos verificadores de cada campo
+         * @param {string} bloco - Bloco de 11 dígitos
+         * @returns {number} - Dígito verificador calculado (0-9)
+         */
+        function calcularDVMod10(bloco) {
+            let soma = 0;
+            let peso = 2;
             
-            return data;
+            for (let i = bloco.length - 1; i >= 0; i--) {
+                let multiplicacao = parseInt(bloco.charAt(i)) * peso;
+                if (multiplicacao >= 10) {
+                    multiplicacao = Math.floor(multiplicacao / 10) + (multiplicacao % 10);
+                }
+                soma += multiplicacao;
+                peso = peso === 2 ? 1 : 2;
+            }
+            
+            const resto = soma % 10;
+            return resto === 0 ? 0 : 10 - resto;
         }
         
-        function extractDocumentNumber(text) {
-            // Procurar por "Número do Documento" ou "Documento" seguido de números
-            const docRegex = /N[úu]mero\s+(?:do\s+)?Documento[\s\n:]*([\d\.\-]+)/i;
-            const match = text.match(docRegex);
+        /**
+         * VALIDAÇÃO MÓDULO 11 - Usado para dígito verificador geral
+         * @param {string} codigo - Código de 43 dígitos (sem o DV geral)
+         * @returns {number} - Dígito verificador calculado
+         */
+        function calcularDVMod11(codigo) {
+            let soma = 0;
+            let peso = 2;
             
-            if (match) {
-                return match[1].trim();
+            for (let i = codigo.length - 1; i >= 0; i--) {
+                soma += parseInt(codigo.charAt(i)) * peso;
+                peso++;
+                if (peso > 9) peso = 2;
             }
             
-            // Procurar por padrão de número de documento: XX.XX.XXXXX.XXXXXXX-X
-            const patternRegex = /(\d{2}\.\d{2}\.\d{5}\.\d{7}\-\d)/;
-            const patternMatch = text.match(patternRegex);
-            
-            // Retornar "Não encontrado" em vez de valor padrão
-            return patternMatch ? patternMatch[1].trim() : 'Não encontrado';
+            const resto = soma % 11;
+            if (resto === 0 || resto === 1) return 0;
+            if (resto === 10) return 1;
+            return 11 - resto;
         }
         
-        function extractBarcode(text) {
-            // CORREÇÃO: O código de barras está formatado com espaços
-            // Padrão: XXXXXXXXX XXXXXXXXX XXXXXXXXX XXXXXXXXX X
-            // Exemplo: 85830000000 9  56120385260 9  13070126009 0  28520830448 9
+        /**
+         * Valida um campo de 12 dígitos (11 + DV) usando Módulo 10
+         */
+        function validarCampoMod10(campo12) {
+            if (campo12.length !== 12) return false;
+            const bloco = campo12.substring(0, 11);
+            const dvInformado = parseInt(campo12.charAt(11));
+            const dvCalculado = calcularDVMod10(bloco);
+            return dvInformado === dvCalculado;
+        }
+        
+        /**
+         * Converte LINHA DIGITÁVEL (48 dígitos) para CÓDIGO DE BARRAS (44 dígitos)
+         * 
+         * Linha Digitável: CAMPO1(11)+DV1(1) + CAMPO2(11)+DV2(1) + CAMPO3(11)+DV3(1) + CAMPO4(11)+DV4(1) = 48
+         * Código Barras:   CAMPO1(11) + CAMPO2(11) + CAMPO3(11) + CAMPO4(11) = 44
+         */
+        function linhaDigitavelParaCodigoBarras(linha48) {
+            if (linha48.length !== 48) {
+                log(`Linha digitável inválida: ${linha48.length} dígitos (esperado 48)`, 'warning');
+                return null;
+            }
             
-            // Primeiro, tentar encontrar o padrão completo com espaços
-            const barcodeRegex = /(\d{11}\s+\d{1}\s{2}\d{11}\s+\d{1}\s{2}\d{11}\s+\d{1}\s{2}\d{11}\s+\d{1})/;
-            const match = text.match(barcodeRegex);
+            // Extrair os 4 campos de 12 dígitos
+            const campo1 = linha48.substring(0, 12);  // 11 + DV
+            const campo2 = linha48.substring(12, 24); // 11 + DV
+            const campo3 = linha48.substring(24, 36); // 11 + DV
+            const campo4 = linha48.substring(36, 48); // 11 + DV
             
-            if (match) {
-                // Remover espaços extras e juntar tudo
-                let barcode = match[1].replace(/\s+/g, '');
-                // O código de barras deve ter 44 dígitos
-                if (barcode.length >= 44) {
-                    return barcode.substring(0, 44);
+            log(`Campo 1: ${campo1} (DV: ${campo1.charAt(11)})`, 'info');
+            log(`Campo 2: ${campo2} (DV: ${campo2.charAt(11)})`, 'info');
+            log(`Campo 3: ${campo3} (DV: ${campo3.charAt(11)})`, 'info');
+            log(`Campo 4: ${campo4} (DV: ${campo4.charAt(11)})`, 'info');
+            
+            // Validar cada campo
+            const valido1 = validarCampoMod10(campo1);
+            const valido2 = validarCampoMod10(campo2);
+            const valido3 = validarCampoMod10(campo3);
+            const valido4 = validarCampoMod10(campo4);
+            
+            log(`Validação Mod10 - Campo1: ${valido1 ? '✓' : '✗'}, Campo2: ${valido2 ? '✓' : '✗'}, Campo3: ${valido3 ? '✓' : '✗'}, Campo4: ${valido4 ? '✓' : '✗'}`, 
+                (valido1 && valido2 && valido3 && valido4) ? 'success' : 'warning');
+            
+            // Montar código de barras (remover DVs)
+            const codigoBarras = campo1.substring(0, 11) + 
+                                 campo2.substring(0, 11) + 
+                                 campo3.substring(0, 11) + 
+                                 campo4.substring(0, 11);
+            
+            log(`Código de barras montado: ${codigoBarras} (${codigoBarras.length} dígitos)`, 'success');
+            
+            return codigoBarras;
+        }
+        
+        /**
+         * EXTRAÇÃO DO CÓDIGO DE BARRAS - FUNÇÃO PRINCIPAL
+         * 
+         * O DARF tem LINHA DIGITÁVEL (48 dígitos visíveis) e CÓDIGO DE BARRAS (44 dígitos)
+         * 
+         * LINHA DIGITÁVEL (formato visual):
+         * "85860000000 4 25970385260 7 13070126009 0 28520539909 8"
+         * = Campo1(11) DV1(1) Campo2(11) DV2(1) Campo3(11) DV3(1) Campo4(11) DV4(1) = 48 dígitos
+         * 
+         * CÓDIGO DE BARRAS (44 dígitos - remove os DVs de cada campo):
+         * "85860000000" + "25970385260" + "13070126009" + "28520539909" = 44 dígitos
+         */
+        function extractBarcode(text, textItems) {
+            log('=== EXTRAINDO CÓDIGO DE BARRAS ===', 'info');
+            
+            // MÉTODO 1: Procurar padrão completo da linha digitável (48 dígitos)
+            // Formato: 11 dígitos + espaço + 1 dígito + espaço (4 vezes)
+            const pattern48 = /(\d{11})\s*(\d)\s+(\d{11})\s*(\d)\s+(\d{11})\s*(\d)\s+(\d{11})\s*(\d)/g;
+            let match48 = pattern48.exec(text);
+            
+            if (match48) {
+                // Montar linha digitável completa (48 dígitos)
+                const linhaDigitavel = match48[1] + match48[2] + match48[3] + match48[4] + 
+                                       match48[5] + match48[6] + match48[7] + match48[8];
+                log(`MÉTODO 1 - Linha digitável encontrada: ${linhaDigitavel} (${linhaDigitavel.length} dígitos)`, 'info');
+                
+                if (linhaDigitavel.length === 48) {
+                    // Converter para código de barras (44 dígitos)
+                    const codigoBarras = linhaDigitavelParaCodigoBarras(linhaDigitavel);
+                    if (codigoBarras && codigoBarras.length === 44) {
+                        return codigoBarras;
+                    }
                 }
             }
             
-            // Tentar método alternativo: procurar por blocos de 11 dígitos seguidos de 1 dígito
-            const blocksRegex = /(\d{11}\s+\d{1})/g;
-            const blocks = text.match(blocksRegex);
+            // MÉTODO 2: Procurar antes de "AUTENTICAÇÃO MECÂNICA"
+            const authPattern = /([\d\s]+)\s*AUTENTICA/i;
+            const authMatch = text.match(authPattern);
             
-            if (blocks && blocks.length >= 4) {
-                // Juntar os 4 blocos
-                let barcode = '';
-                for (let i = 0; i < 4 && i < blocks.length; i++) {
-                    barcode += blocks[i].replace(/\s+/g, '');
+            if (authMatch) {
+                log(`Encontrou antes de AUTENTICAÇÃO: "${authMatch[1].trim()}"`, 'info');
+                
+                // Extrair apenas dígitos
+                const digits = authMatch[1].replace(/[^\d]/g, '');
+                log(`Dígitos extraídos: ${digits} (${digits.length} dígitos)`, 'info');
+                
+                // Se tem 48 dígitos, converter para 44
+                if (digits.length >= 48 && digits.startsWith('8')) {
+                    const linha48 = digits.substring(0, 48);
+                    const codigoBarras = linhaDigitavelParaCodigoBarras(linha48);
+                    if (codigoBarras && codigoBarras.length === 44) {
+                        log(`MÉTODO 2 - Código de barras: ${codigoBarras}`, 'success');
+                        return codigoBarras;
+                    }
                 }
-                if (barcode.length >= 44) {
-                    return barcode.substring(0, 44);
+                
+                // Se tem exatamente 44 dígitos, usar diretamente
+                if (digits.length === 44 && digits.startsWith('8')) {
+                    log(`MÉTODO 2 - Código direto (44): ${digits}`, 'success');
+                    return digits;
                 }
             }
             
-            // Última tentativa: procurar qualquer sequência de 44+ dígitos (com ou sem espaços)
-            const anyBarcodeRegex = /(\d[\d\s]{43,})/;
-            const anyMatch = text.match(anyBarcodeRegex);
+            // MÉTODO 3: Procurar antes de "CNPJ:" na seção PIX
+            const pixPattern = /([\d\s]+)\s*CNPJ\s*:/i;
+            const pixMatch = text.match(pixPattern);
             
-            if (anyMatch) {
-                let barcode = anyMatch[1].replace(/\s+/g, '');
-                if (barcode.length >= 44) {
-                    return barcode.substring(0, 44);
-                }
-            }
-            
-            // Procurar por "Documento de Arrecadação" que geralmente vem antes do código
-            const lines = text.split('\n');
-            for (let i = 0; i < lines.length; i++) {
-                if (lines[i].includes('Documento de Arrecadação')) {
-                    // A próxima linha pode conter o código de barras
-                    if (i + 1 < lines.length) {
-                        let nextLine = lines[i + 1];
-                        let barcode = nextLine.replace(/\s+/g, '');
-                        if (barcode.length >= 44 && /^\d+$/.test(barcode)) {
-                            return barcode.substring(0, 44);
+            if (pixMatch) {
+                log(`Encontrou antes de CNPJ: "${pixMatch[1].trim()}"`, 'info');
+                
+                const digits = pixMatch[1].replace(/[^\d]/g, '');
+                log(`Dígitos extraídos: ${digits} (${digits.length} dígitos)`, 'info');
+                
+                // Se tem 48 dígitos, converter para 44
+                for (let i = 0; i <= digits.length - 48; i++) {
+                    const candidate = digits.substring(i, i + 48);
+                    if (candidate.startsWith('8')) {
+                        const codigoBarras = linhaDigitavelParaCodigoBarras(candidate);
+                        if (codigoBarras && codigoBarras.length === 44) {
+                            log(`MÉTODO 3 - Código de barras: ${codigoBarras}`, 'success');
+                            return codigoBarras;
                         }
                     }
                 }
             }
             
-            return 'Não encontrado';
+            // MÉTODO 4: Extrair todos os dígitos e procurar linha digitável de 48
+            const allDigits = text.replace(/[^\d]/g, '');
+            log(`Total de dígitos no texto: ${allDigits.length}`, 'info');
+            log(`Primeiros 100 dígitos: ${allDigits.substring(0, 100)}`, 'info');
+            
+            // Procurar linha digitável de 48 dígitos que começa com 858
+            for (let i = 0; i <= allDigits.length - 48; i++) {
+                const candidate = allDigits.substring(i, i + 48);
+                
+                if (candidate.startsWith('858')) {
+                    log(`MÉTODO 4 - Candidato 48 dígitos: ${candidate}`, 'info');
+                    const codigoBarras = linhaDigitavelParaCodigoBarras(candidate);
+                    if (codigoBarras && codigoBarras.length === 44) {
+                        log(`MÉTODO 4 - Código de barras: ${codigoBarras}`, 'success');
+                        return codigoBarras;
+                    }
+                }
+            }
+            
+            // MÉTODO 5: Se não encontrou 48, procurar diretamente 44 dígitos
+            for (let i = 0; i <= allDigits.length - 44; i++) {
+                const candidate = allDigits.substring(i, i + 44);
+                
+                if (candidate.startsWith('858')) {
+                    log(`MÉTODO 5 - Código direto 44: ${candidate}`, 'success');
+                    return candidate;
+                }
+            }
+            
+            // MÉTODO 6: Último recurso - qualquer sequência de 44 começando com 8
+            for (let i = 0; i <= allDigits.length - 44; i++) {
+                const candidate = allDigits.substring(i, i + 44);
+                
+                if (candidate.startsWith('8')) {
+                    log(`MÉTODO 6 - Qualquer 44 com 8: ${candidate}`, 'warning');
+                    return candidate;
+                }
+            }
+            
+            log('Código de barras não encontrado!', 'error');
+            return 'NÃO ENCONTRADO';
         }
         
         function extractDueDate(text) {
-            // Procurar por "Data de Vencimento" ou "Vencimento" seguido de data
-            const dateRegex1 = /Data\s+(?:de\s+)?Vencimento[\s\n:]*(\d{2}\/\d{2}\/\d{4})/i;
-            const match1 = text.match(dateRegex1);
+            // Padrão: DD/MM/AAAA
+            const patterns = [
+                /Vencimento[:\s]*(\d{2}\/\d{2}\/\d{4})/i,
+                /Pagar\s+(?:este\s+documento\s+)?at[ée][:\s]*(\d{2}\/\d{2}\/\d{4})/i,
+                /Data\s+(?:de\s+)?Vencimento[:\s]*(\d{2}\/\d{2}\/\d{4})/i
+            ];
             
-            if (match1) {
-                return match1[1].trim();
-            }
-            
-            // Procurar por "Vencimento" seguido de data
-            const dateRegex2 = /Vencimento[\s\n:]*(\d{2}\/\d{2}\/\d{4})/i;
-            const match2 = text.match(dateRegex2);
-            
-            if (match2) {
-                return match2[1].trim();
-            }
-            
-            // Procurar por "Pagar até" seguido de data
-            const dateRegex3 = /Pagar\s+at[ée][\s\n:]*(\d{2}\/\d{2}\/\d{4})/i;
-            const match3 = text.match(dateRegex3);
-            
-            if (match3) {
-                return match3[1].trim();
-            }
-            
-            return 'Não encontrado';
-        }
-        
-        function extractTaxCode(text) {
-            // Buscar o código abaixo do título "Código"
-            const lines = text.split('\n');
-            
-            for (let i = 0; i < lines.length; i++) {
-                const line = lines[i].trim();
-                
-                // Se encontrou "Código" na linha
-                if (line.toLowerCase().includes('código')) {
-                    // Verificar a próxima linha para o código do imposto
-                    if (i + 1 < lines.length) {
-                        const nextLine = lines[i + 1].trim();
-                        // Procurar por padrão de código (04 73 ou 0473)
-                        const codeMatch = nextLine.match(/(\d{2,3}\s*\d{2,3})/);
-                        if (codeMatch) {
-                            let code = codeMatch[1].trim();
-                            // Formatar para ter espaço se necessário (0473 -> 04 73)
-                            code = code.replace(/\s/g, '');
-                            if (code.length === 4) {
-                                code = code.substring(0, 2) + ' ' + code.substring(2);
-                            }
-                            return code;
-                        }
-                    }
-                    
-                    // Se não encontrou na próxima linha, procurar na mesma linha após "Código"
-                    const sameLineMatch = line.match(/C[óo]digo[\s:]*(\d{2,3}\s*\d{2,3})/i);
-                    if (sameLineMatch) {
-                        let code = sameLineMatch[1].trim();
-                        code = code.replace(/\s/g, '');
-                        if (code.length === 4) {
-                            code = code.substring(0, 2) + ' ' + code.substring(2);
-                        }
-                        return code;
-                    }
-                }
-                
-                // Procurar por padrão específico "04 73" ou "0473" em qualquer linha
-                if (line.match(/^0?\d{2,3}\s?0?\d{2,3}$/)) {
-                    let code = line.replace(/\s/g, '');
-                    if (code.length === 4) {
-                        code = code.substring(0, 2) + ' ' + code.substring(2);
-                    }
-                    return code;
+            for (const pattern of patterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    return match[1];
                 }
             }
             
-            return 'Não encontrado';
+            // Procurar qualquer data no formato DD/MM/AAAA
+            const dateMatch = text.match(/(\d{2}\/\d{2}\/\d{4})/);
+            return dateMatch ? dateMatch[1] : '-';
         }
         
         function extractCNPJ(text) {
-            // Procurar por CNPJ no formato XX.XXX.XXX/XXXX-XX
-            const cnpjRegex = /(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/;
-            const match = text.match(cnpjRegex);
-            return match ? match[1].trim() : 'Não encontrado';
-        }
-        
-        function extractCompanyName(text) {
-            // Procurar por "Fazão Social" ou "Razão Social" ou "Empresa"
-            const nameRegex1 = /(?:Faz|Raz)[ãa]o\s+Social[\s\n:]*([^\n]{5,50})/i;
-            const match1 = text.match(nameRegex1);
-            
-            if (match1) {
-                return match1[1].trim();
-            }
-            
-            // Procurar por texto em maiúsculas que parece ser nome de empresa
-            const nameRegex2 = /([A-Z\s]{10,50}SA\s+[A-Z]+)/;
-            const match2 = text.match(nameRegex2);
-            
-            return match2 ? match2[1].trim() : 'Não encontrado';
+            const match = text.match(/(\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2})/);
+            return match ? match[1] : '-';
         }
         
         function extractValue(text) {
-            // Procurar por valor após "Principal"
-            const valueRegex1 = /Principal[\s\n]*([\d.,]+)/i;
-            const match1 = text.match(valueRegex1);
+            // Procurar valor após "Valor:" ou "Total"
+            const patterns = [
+                /Valor[:\s]*R?\$?\s*([\d.,]+)/i,
+                /Total[:\s]*R?\$?\s*([\d.,]+)/i,
+                /Valor\s+Total[:\s]*R?\$?\s*([\d.,]+)/i
+            ];
             
-            if (match1) {
-                return match1[1].trim();
+            for (const pattern of patterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    return 'R$ ' + match[1];
+                }
             }
             
-            // Procurar por "Valor:" seguido de número
-            const valueRegex2 = /Valor[\s\n:]*([\d.,]+)/i;
-            const match2 = text.match(valueRegex2);
-            
-            if (match2) {
-                return match2[1].trim();
-            }
-            
-            // Procurar por padrão de moeda
-            const valueRegex3 = /R\$\s*([\d.,]+)/i;
-            const match3 = text.match(valueRegex3);
-            
-            return match3 ? match3[1].trim() : 'Não encontrado';
+            return '-';
         }
         
-        function addRowToTable(data, index) {
+        function addResultRow(data, index) {
+            const statusClass = data.barcode.length === 44 ? 'text-success' : 'text-danger';
+            const statusIcon = data.barcode.length === 44 ? 'check-circle' : 'exclamation-circle';
+            
             const row = document.createElement('tr');
-            
-            // Determinar classe de status
-            let statusClass = 'status-processing';
-            if (data.status === 'Processado com sucesso') {
-                statusClass = 'status-completed';
-            } else if (data.status.includes('Erro')) {
-                statusClass = 'status-error';
-            }
-            
             row.innerHTML = `
                 <td>${index}</td>
                 <td>${data.fileName}</td>
-                <td>${data.documentNumber}</td>
-                <td><span class="font-monospace">${data.barcode}</span></td>
-                <td>${data.dueDate}</td>
-                <td><span class="badge bg-secondary">${data.taxCode}</span></td>
-                <td><span class="font-monospace">${data.cnpj}</span></td>
-                <td>${data.companyName}</td>
-                <td><span class="badge bg-success">R$ ${data.value}</span></td>
-                <td><span class="status-badge ${statusClass}">${data.status}</span></td>
                 <td>
-                    <button class="btn btn-sm btn-outline-primary view-details-btn" data-index="${index - 1}">
-                        <i class="fas fa-eye"></i>
+                    <code class="barcode-display" style="font-size: 0.75rem; padding: 0.5rem;">
+                        ${data.barcode}
+                    </code>
+                    <br>
+                    <small class="text-muted">${data.barcode.length} dígitos</small>
+                    <button class="btn btn-sm btn-outline-secondary ms-2" onclick="copyBarcode('${data.barcode}')">
+                        <i class="fas fa-copy"></i>
                     </button>
                 </td>
+                <td>${data.dueDate}</td>
+                <td>${data.cnpj}</td>
+                <td>${data.value}</td>
+                <td class="${statusClass}">
+                    <i class="fas fa-${statusIcon} me-1"></i>
+                    ${data.status}
+                </td>
             `;
-            
-            darfTableBody.appendChild(row);
-            
-            // Adicionar event listener ao botão de visualizar
-            row.querySelector('.view-details-btn').addEventListener('click', (e) => {
-                const dataIndex = parseInt(e.target.closest('.view-details-btn').getAttribute('data-index'));
-                viewDetails(dataIndex);
-            });
-        }
-        
-        function viewDetails(index) {
-            const data = extractedData[index];
-            
-            // Criar modal com detalhes
-            const modalHTML = `
-                <div class="modal fade" id="detailsModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header bg-primary text-white">
-                                <h5 class="modal-title">
-                                    <i class="fas fa-info-circle me-2"></i> Detalhes do DARF
-                                </h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <h6>Informações do Documento</h6>
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <th>Arquivo:</th>
-                                                <td>${data.fileName}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Número do Documento:</th>
-                                                <td><strong>${data.documentNumber}</strong></td>
-                                            </tr>
-                                            <tr>
-                                                <th>Código de Barras:</th>
-                                                <td class="font-monospace">${data.barcode}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Data de Vencimento:</th>
-                                                <td>${data.dueDate}</td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <h6>Informações Fiscais</h6>
-                                        <table class="table table-sm">
-                                            <tr>
-                                                <th>Código do Imposto:</th>
-                                                <td><span class="badge bg-secondary">${data.taxCode}</span></td>
-                                            </tr>
-                                            <tr>
-                                                <th>CNPJ:</th>
-                                                <td class="font-monospace">${data.cnpj}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Razão Social:</th>
-                                                <td>${data.companyName}</td>
-                                            </tr>
-                                            <tr>
-                                                <th>Valor:</th>
-                                                <td><span class="badge bg-success">R$ ${data.value}</span></td>
-                                            </tr>
-                                        </table>
-                                    </div>
-                                </div>
-                                <div class="mt-3">
-                                    <h6>Código de Barras para Pagamento:</h6>
-                                    <div class="alert alert-light font-monospace text-center fs-5 p-3">
-                                        ${formatBarcodeForDisplay(data.barcode)}
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
-                                <button type="button" class="btn btn-primary" onclick="copyBarcode('${data.barcode}')">
-                                    <i class="fas fa-copy me-2"></i> Copiar Código
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            
-            // Adicionar modal ao DOM
-            const modalContainer = document.createElement('div');
-            modalContainer.innerHTML = modalHTML;
-            document.body.appendChild(modalContainer.firstElementChild);
-            
-            // Mostrar modal
-            const modal = new bootstrap.Modal(document.getElementById('detailsModal'));
-            modal.show();
-            
-            // Remover modal do DOM após fechar
-            document.getElementById('detailsModal').addEventListener('hidden.bs.modal', function() {
-                this.remove();
-            });
-        }
-        
-        function formatBarcodeForDisplay(barcode) {
-            // Formatar código de barras em grupos para melhor legibilidade
-            if (barcode.length === 44) {
-                // Formato comum de código de barras
-                return `${barcode.substring(0,5)}.${barcode.substring(5,10)} ${barcode.substring(10,15)}.${barcode.substring(15,21)} ${barcode.substring(21,26)}.${barcode.substring(26,32)} ${barcode.substring(32,33)} ${barcode.substring(33,44)}`;
-            }
-            return barcode;
+            resultsBody.appendChild(row);
         }
         
         function copyBarcode(barcode) {
             navigator.clipboard.writeText(barcode).then(() => {
-                showStatusMessage('Código de barras copiado para a área de transferência!', 'success');
-            }).catch(err => {
-                showStatusMessage('Erro ao copiar código: ' + err, 'error');
+                alert('Código copiado!');
+            });
+        }
+        
+        function copyAllBarcodes() {
+            const barcodes = results.map(r => r.barcode).join('\n');
+            navigator.clipboard.writeText(barcodes).then(() => {
+                alert('Todos os códigos copiados!');
             });
         }
         
         function exportToExcel() {
-            if (extractedData.length === 0) return;
-            
-            // Preparar dados para exportação
-            const exportData = extractedData.map((item, index) => ({
-                'ID': index + 1,
-                'Arquivo': item.fileName || '',
-                'Número do Documento': item.documentNumber,
-                'Código de Barras': item.barcode,
-                'Data de Vencimento': item.dueDate,
-                'Código do Imposto': item.taxCode,
-                'CNPJ': item.cnpj,
-                'Razão Social': item.companyName,
-                'Valor': `R$ ${item.value}`,
-                'Status': item.status
+            const data = results.map((r, i) => ({
+                '#': i + 1,
+                'Arquivo': r.fileName,
+                'Código de Barras': r.barcode,
+                'Tamanho': r.barcode.length,
+                'Vencimento': r.dueDate,
+                'CNPJ': r.cnpj,
+                'Valor': r.value,
+                'Status': r.status
             }));
             
-            // Criar planilha
-            const worksheet = XLSX.utils.json_to_sheet(exportData);
-            const workbook = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(workbook, worksheet, 'DARFs Processados');
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'DARFs');
+            XLSX.writeFile(wb, `darfs_${new Date().toISOString().split('T')[0]}.xlsx`);
             
-            // Gerar arquivo
-            const fileName = `DARFs_Processados_${new Date().toISOString().slice(0,10)}.xlsx`;
-            XLSX.writeFile(workbook, fileName);
-            
-            showStatusMessage(`Arquivo ${fileName} exportado com sucesso!`, 'success');
+            log('Arquivo Excel exportado!', 'success');
         }
-        
-        function exportToCSV() {
-            if (extractedData.length === 0) return;
-            
-            // Criar cabeçalho
-            const headers = ['ID', 'Arquivo', 'Número do Documento', 'Código de Barras', 'Data de Vencimento', 'Código do Imposto', 'CNPJ', 'Razão Social', 'Valor', 'Status'];
-            
-            // Criar linhas
-            const rows = extractedData.map((item, index) => [
-                index + 1,
-                item.fileName || '',
-                item.documentNumber,
-                item.barcode,
-                item.dueDate,
-                item.taxCode,
-                item.cnpj,
-                item.companyName,
-                `R$ ${item.value}`,
-                item.status
-            ]);
-            
-            // Combinar cabeçalho e linhas
-            const csvContent = [
-                headers.join(';'),
-                ...rows.map(row => row.join(';'))
-            ].join('\n');
-            
-            // Criar blob e download
-            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement('a');
-            const url = URL.createObjectURL(blob);
-            
-            link.setAttribute('href', url);
-            link.setAttribute('download', `DARFs_Processados_${new Date().toISOString().slice(0,10)}.csv`);
-            link.style.visibility = 'hidden';
-            
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            
-            showStatusMessage(`Arquivo CSV exportado com sucesso!`, 'success');
-        }
-        
-        function clearAll() {
-            selectedFiles = [];
-            extractedData = [];
-            
-            fileListContainer.innerHTML = '';
-            document.getElementById('fileList').style.display = 'none';
-            
-            darfTableBody.innerHTML = '';
-            
-            progressBar.style.width = '0%';
-            progressPercent.textContent = '0%';
-            progressBar.classList.add('progress-bar-animated');
-            
-            processBtn.disabled = true;
-            exportExcelBtn.disabled = true;
-            exportCSVBtn.disabled = true;
-            
-            showStatusMessage('Todos os dados foram limpos. Você pode começar um novo processamento.', 'info');
-        }
-        
-        // Inicialização
-        window.onload = function() {
-            showStatusMessage('Sistema pronto para processamento de DARFs. Carregue os arquivos PDF para começar.', 'info');
-        };
     </script>
 </body>
 </html>
